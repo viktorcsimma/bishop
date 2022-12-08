@@ -39,21 +39,32 @@ open import Real
 
 -- Properties to show real equality is an equivalence relation
 
-≃-refl : Reflexive _≃_
+@0 ≃-refl : Reflexive _≃_
 ≃-refl {x} = *≃* λ { (suc k₁) → let n = suc k₁ in begin
   ℚ.∣ seq x n ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq x n)) ⟩
   0ℚᵘ                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                    ∎}
   where open ℚP.≤-Reasoning
 
-≃-symm : Symmetric _≃_
+{-
+infix 1 0begin_
+@0 0begin_ : ∀ {x y} → x ℚ.≤ y → x ℚ.≤ y
+0begin_ = ?
+
+infixr 2 0step-≤
+@0 0step-≤ : ∀ (x : ℚᵘ) {y z : ℚᵘ} → y ℚ.≤ z → (x ℚ.≤ y) → x ℚ.≤ z
+0step-≤ = {!!}
+syntax 0step-≤  x y∼z x≤y = x 0≤⟨  x≤y ⟩ y∼z
+-}
+
+@0 ≃-symm : Symmetric _≃_
 ≃-symm {x} {y} (*≃* x₁) = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ seq y n ℚ.- seq x n ∣ ≈⟨ ∣p-q∣≃∣q-p∣ (seq y n) (seq x n) ⟩
-  ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ x₁ n ⟩
+  ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ {!x₁ n!} ⟩
   + 2 / n                    ∎})
   where open ℚP.≤-Reasoning
 
-≃-reflexive : ∀ {x y} -> (∀ n -> {n ≢0} -> seq x n ℚ.≃ seq y n) -> x ≃ y
+@0 ≃-reflexive : ∀ {x y} -> (∀ n -> {n ≢0} -> seq x n ℚ.≃ seq y n) -> x ≃ y
 ≃-reflexive {x} {y} hyp = *≃* (λ {(suc n-1) -> let n = suc n-1 in begin
   ℚ.∣ seq x n ℚ.- seq y n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (seq x n) (ℚP.-‿cong (ℚP.≃-sym (hyp n)))) ⟩
   ℚ.∣ seq x n ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq x n)) ⟩
@@ -63,27 +74,27 @@ open import Real
 
 -- The following equality lemma is Lemma 2.3 in Bishop & Bridges.
 -- It is used to prove that equality is transitive.
-equality-lemma-if : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
+@0 equality-lemma-if : ∀ x y -> (x ≃ y) -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
                   ∃ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
                   ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
 equality-lemma-if x y (*≃* x₁) (suc k₁) = let j = suc k₁ in 2 ℕ.* j , let N = 2 ℕ.* j in λ { (suc k₂) n≥N → let n = suc k₂ in begin
-  ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ x₁ n ⟩
+  ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ {!x₁ n!} ⟩
   + 2 / n                   ≤⟨ ℚ.*≤* (ℤP.*-monoˡ-≤-nonNeg 2 (ℤ.+≤+ n≥N)) ⟩
   + 2 / N                   ≈⟨ ℚ.*≡* (sym (ℤP.*-identityˡ (+ 2 ℤ.* + j))) ⟩
   + 1 / j                     ∎}
   where open ℚP.≤-Reasoning
 
 abstract
-  fast-equality-lemma-if : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
+  @0 fast-equality-lemma-if : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
                            ∃ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
                            ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
   fast-equality-lemma-if = equality-lemma-if
 
-equality-lemma-onlyif : ∀ x y ->
+@0 equality-lemma-onlyif : ∀ x y ->
                         (∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
                          ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}) ->
                         x ≃ y                  
-equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> lem n {n≢0} (∣xₙ-yₙ∣≤2/n+3/j n {n≢0})}
+equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> {!lem n {n≢0} (∣xₙ-yₙ∣≤2/n+3/j n {n≢0})!}}
   where
     open ℚP.≤-Reasoning
     open ℚ-Solver
@@ -129,7 +140,7 @@ equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> lem n {n≢0} (∣xₙ-
       + 2 / n ℚ.+ + 3 / j                                ∎
       
 
-    lem : ∀ (n : ℕ) -> {n≢0 : n ≢0} ->
+    @0 lem : ∀ (n : ℕ) -> {n≢0 : n ≢0} ->
           (∀ (j : ℕ) -> {j≢0 : j ≢0} ->
           ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 2 / n) {n≢0} ℚ.+ (+ 3 / j) {j≢0}) ->
           ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 2 / n) {n≢0}
@@ -144,10 +155,10 @@ equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> lem n {n≢0} (∣xₙ-
       + 3 / j ℚ.+ + 2 / n                               <⟨ ℚP.+-monoˡ-< (+ 2 / n) (proj₂ arch) ⟩
       ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.- + 2 / n ℚ.+ + 2 / n ≈⟨ solve 2 (λ a b -> a ⊖ b ⊕ b ⊜ a) ℚP.≃-refl
                                                            ℚ.∣ seq x n ℚ.- seq y n ∣ (+ 2 / n) ⟩
-      ℚ.∣ seq x n ℚ.- seq y n ∣                         ≤⟨ ∣xₙ-yₙ∣≤2/n+3/j n j ⟩
+      ℚ.∣ seq x n ℚ.- seq y n ∣                         ≤⟨ {!∣xₙ-yₙ∣≤2/n+3/j n j!} ⟩
       + 2 / n ℚ.+ + 3 / j                                ∎)})
-
-≃-trans : Transitive _≃_
+{-
+@0 ≃-trans : Transitive _≃_
 ≃-trans {x} {y} {z} x≃y y≃z = equality-lemma-onlyif x z (λ { (suc k₁) ->
                               let j = suc k₁; eqxy = fast-equality-lemma-if x y x≃y; eqyz = fast-equality-lemma-if y z y≃z
                                       ; N₁ = proj₁ (eqxy (2 ℕ.* j)); N₂ = proj₁ (eqyz (2 ℕ.* j)); N = suc (N₁ ℕ.⊔ N₂) in
@@ -2576,3 +2587,4 @@ x≤z∧y≤z⇒x⊔y≤z {x} {y} {z} x≤z y≤z = lemma-2-8-2-onlyif lem
           seq z (2 ℕ.* m) ℚ.- seq (x ⊔ y) (2 ℕ.* m)  ∎
 
 
+-}

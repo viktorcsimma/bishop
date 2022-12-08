@@ -41,7 +41,7 @@ record ℝ : Set where
   field
     -- No n≢0 condition for seq
     seq : ℕ → ℚᵘ
-    reg : (m n : ℕ) {m≢0 : m ≢0} {n≢0 : n ≢0} →
+    @0 reg : (m n : ℕ) {m≢0 : m ≢0} {n≢0 : n ≢0} →  -- @0 means runtime irrelevance
           ℚ.∣ seq m ℚ.- seq n ∣ ℚ.≤
           (+ 1 / m) {m≢0} ℚ.+ (+ 1 / n) {n≢0}
 
@@ -53,7 +53,7 @@ infixl 7 _*_
 infix 8 -_ _⋆
 
 data _≃_ : Rel ℝ Level.zero where
-  *≃* : {x y : ℝ} → ((n : ℕ) {n≢0 : n ≢0} →
+  *≃* : {x y : ℝ} → @0 ((n : ℕ) {n≢0 : n ≢0} →
         ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 2 / n) {n≢0}) →
         x ≃ y
 
@@ -96,7 +96,7 @@ abstract
       
         where open ℤP.≤-Reasoning
 
-canonical-strict-upper-bound : ∀ (x : ℝ) -> ∀ (n : ℕ) -> {n ≢0} -> ℚ.∣ seq x n ∣ ℚ.< + K x / 1
+@0 canonical-strict-upper-bound : ∀ (x : ℝ) -> ∀ (n : ℕ) -> {n ≢0} -> ℚ.∣ seq x n ∣ ℚ.< + K x / 1
 canonical-strict-upper-bound x (suc k₁) = let n = suc k₁ in begin-strict
   ℚ.∣ seq x n ∣                               ≈⟨ ℚP.∣-∣-cong (solve 2 (λ xₙ x₁ ->
                                                  xₙ ⊜ (x₁ ⊕ (xₙ ⊖ x₁))) ℚP.≃-refl (seq x n) (seq x 1)) ⟩
