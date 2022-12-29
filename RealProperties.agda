@@ -2,7 +2,7 @@
 -- Note that these properties are only for the operations defined in
 -- Real.agda. For definitions and properties regarding inverses, see Inverse.agda.
 
-{-# OPTIONS --without-K --safe #-}
+{-# OPTIONS --without-K --safe --prop #-}
 
 module RealProperties where
 
@@ -39,14 +39,14 @@ open import Real
 
 -- Properties to show real equality is an equivalence relation
 
-≃-refl : Reflexive _≃_
+≃-refl : {x : ℝ} → x ≃ x
 ≃-refl {x} = *≃* λ { (suc k₁) → let n = suc k₁ in begin
   ℚ.∣ seq x n ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq x n)) ⟩
   0ℚᵘ                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                    ∎}
   where open ℚP.≤-Reasoning
 
-≃-symm : Symmetric _≃_
+≃-symm : {x y : ℝ} → x ≃ y → y ≃ x 
 ≃-symm {x} {y} (*≃* x₁) = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ seq y n ℚ.- seq x n ∣ ≈⟨ ∣p-q∣≃∣q-p∣ (seq y n) (seq x n) ⟩
   ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ x₁ n ⟩
@@ -66,12 +66,15 @@ open import Real
 equality-lemma-if : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
                   ∃ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
                   ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
+equality-lemma-if = ?
+{-
 equality-lemma-if x y (*≃* x₁) (suc k₁) = let j = suc k₁ in 2 ℕ.* j , let N = 2 ℕ.* j in λ { (suc k₂) n≥N → let n = suc k₂ in begin
   ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ x₁ n ⟩
   + 2 / n                   ≤⟨ ℚ.*≤* (ℤP.*-monoˡ-≤-nonNeg 2 (ℤ.+≤+ n≥N)) ⟩
   + 2 / N                   ≈⟨ ℚ.*≡* (sym (ℤP.*-identityˡ (+ 2 ℤ.* + j))) ⟩
   + 1 / j                     ∎}
   where open ℚP.≤-Reasoning
+-}
 
 abstract
   fast-equality-lemma-if : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
@@ -147,7 +150,7 @@ equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> lem n {n≢0} (∣xₙ-
       ℚ.∣ seq x n ℚ.- seq y n ∣                         ≤⟨ ∣xₙ-yₙ∣≤2/n+3/j n j ⟩
       + 2 / n ℚ.+ + 3 / j                                ∎)})
 
-≃-trans : Transitive _≃_
+≃-trans : {x y z : ℝ} → x ≃ y → y ≃ z → x ≃ z
 ≃-trans {x} {y} {z} x≃y y≃z = equality-lemma-onlyif x z (λ { (suc k₁) ->
                               let j = suc k₁; eqxy = fast-equality-lemma-if x y x≃y; eqyz = fast-equality-lemma-if y z y≃z
                                       ; N₁ = proj₁ (eqxy (2 ℕ.* j)); N₂ = proj₁ (eqyz (2 ℕ.* j)); N = suc (N₁ ℕ.⊔ N₂) in
@@ -178,18 +181,24 @@ equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> lem n {n≢0} (∣xₙ-
         )
 
 -- Equivalence relatiion structures and reasoning packages
+-- this is problematic because the standard library was written with Set
 
+{-
 ≃-isEquivalence : IsEquivalence _≃_
 ≃-isEquivalence = record
   { refl = ≃-refl
   ; sym = ≃-symm
   ; trans = ≃-trans
   }
+-}
+postulate
+  ≃-isEquivalence : IsEquivalence _≃_ --this does not work either
 
 ≃-setoid : Setoid 0ℓ 0ℓ
 ≃-setoid = record
   { isEquivalence = ≃-isEquivalence
   }
+
 
 module ≃-Reasoning where
   open import Relation.Binary.Reasoning.Setoid ≃-setoid

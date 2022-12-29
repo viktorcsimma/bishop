@@ -1,6 +1,6 @@
 -- Definition of the real numbers with arithmetic operations and ordering
 
-{-# OPTIONS --without-K --safe #-}
+{-# OPTIONS --without-K --safe --prop #-}
 
 module Real where
 
@@ -58,7 +58,7 @@ infixl 6 _+_ _-_ _⊔_ _⊓_ _⊓₂_
 infixl 7 _*_
 infix 8 -_ _⋆
 
-data _≃_ : Rel ℝ Level.zero where
+data _≃_ : ℝ → ℝ → Prop where
   *≃* : {x y : ℝ} → ((n : ℕ) {n≢0 : n ≢0} →
         ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 2 / n) {n≢0}) →
         x ≃ y
