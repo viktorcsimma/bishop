@@ -45,12 +45,16 @@ open import Real
 testf zero = zero
 testf (suc n) = suc n -- ...but this does:)
 
+--A simpler example:
+@0 testf2 : @0 ℕ → ℕ
+testf2 = λ {n → n}  --without curly braces, it works
+
 -- Maybe I'll submit an issue.
 -}
 
 -- Properties to show real equality is an equivalence relation
 
-@0 ≃-refl : Reflexive _≃_
+≃-refl : Reflexive _≃_
 ≃-refl {x} = *≃* λ { (suc k₁) → let n = suc k₁ in begin
   ℚ.∣ seq x n ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq x n)) ⟩
   0ℚᵘ                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
@@ -60,10 +64,10 @@ testf (suc n) = suc n -- ...but this does:)
 postulate
   cheat : ∀{i j} {A : Set i} {B : Set j} → A → B
 
-@0 ≃-symm : Symmetric _≃_
+≃-symm : Symmetric _≃_
 ≃-symm {x} {y} (*≃* x₁) = *≃* lem
   where
-    lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq y n ℚ.- seq x n ∣ ℚ.≤ + 2 / n
+    @0 lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq y n ℚ.- seq x n ∣ ℚ.≤ + 2 / n
     lem (suc k) = let n = suc k in begin
         ℚ.∣ seq y n ℚ.- seq x n ∣ ≈⟨ ∣p-q∣≃∣q-p∣ (seq y n) (seq x n) ⟩
         ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ x₁ n ⟩
@@ -71,7 +75,7 @@ postulate
       where
       open ℚP.≤-Reasoning
 
-@0 ≃-reflexive : ∀ {x y} -> (∀ n -> {n ≢0} -> seq x n ℚ.≃ seq y n) -> x ≃ y
+≃-reflexive : ∀ {x y} -> (∀ n -> {n ≢0} -> seq x n ℚ.≃ seq y n) -> x ≃ y
 ≃-reflexive {x} {y} hyp = *≃* (λ {(suc n-1) -> let n = suc n-1 in begin
   ℚ.∣ seq x n ℚ.- seq y n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (seq x n) (ℚP.-‿cong (ℚP.≃-sym (hyp n)))) ⟩
   ℚ.∣ seq x n ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq x n)) ⟩
@@ -84,12 +88,18 @@ postulate
 @0 equality-lemma-if : ∀ x y -> (x ≃ y) -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
                   ∃ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
                   ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
-equality-lemma-if x y (*≃* x₁) (suc k₁) = let j = suc k₁ in 2 ℕ.* j , let N = 2 ℕ.* j in λ { (suc k₂) n≥N → let n = suc k₂ in begin
-  ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ {!x₁ n!} ⟩
-  + 2 / n                   ≤⟨ ℚ.*≤* (ℤP.*-monoˡ-≤-nonNeg 2 (ℤ.+≤+ n≥N)) ⟩
-  + 2 / N                   ≈⟨ ℚ.*≡* (sym (ℤP.*-identityˡ (+ 2 ℤ.* + j))) ⟩
-  + 1 / j                     ∎}
-  where open ℚP.≤-Reasoning
+equality-lemma-if x y (*≃* x₁) (suc k₁) = (2 ℕ.* j , lem)
+  where
+    open ℚP.≤-Reasoning
+    j : ℕ
+    j = suc k₁
+    @0 lem : (n : ℕ) → n ℕ.≥ suc (k₁ ℕ.+ suc (k₁ ℕ.+ zero)) → ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ mkℚᵘ (+ 1) k₁
+    lem (suc k₂) n≥N = let N = 2 ℕ.* j ; n = suc k₂ in begin
+        ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ x₁ n ⟩
+        + 2 / n                   ≤⟨ ℚ.*≤* (ℤP.*-monoˡ-≤-nonNeg 2 (ℤ.+≤+ n≥N)) ⟩
+        + 2 / N                   ≈⟨ ℚ.*≡* (sym (ℤP.*-identityˡ (+ 2 ℤ.* + j))) ⟩
+        + 1 / j                     ∎
+    
 
 abstract
   @0 fast-equality-lemma-if : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
@@ -97,11 +107,11 @@ abstract
                            ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
   fast-equality-lemma-if = equality-lemma-if
 
-@0 equality-lemma-onlyif : ∀ x y ->
-                        (∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
+equality-lemma-onlyif : ∀ x y ->
+                        @0 (∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
                          ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}) ->
                         x ≃ y                  
-equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> {!lem n {n≢0} (∣xₙ-yₙ∣≤2/n+3/j n {n≢0})!}}
+equality-lemma-onlyif x y hyp1 = *≃* (λ n {n≢0} -> lem n {n≢0} (∣xₙ-yₙ∣≤2/n+3/j n {n≢0}))
   where
     open ℚP.≤-Reasoning
     open ℚ-Solver
@@ -114,7 +124,7 @@ equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> {!lem n {n≢0} (∣x�
         ; Κ   to κ
         )
 
-    ∣xₙ-yₙ∣≤2/n+3/j : ∀ (n : ℕ) -> {n≢0 : n ≢0} -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
+    @0 ∣xₙ-yₙ∣≤2/n+3/j : ∀ (n : ℕ) -> {n≢0 : n ≢0} -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
                       ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 2 / n) {n≢0} ℚ.+ (+ 3 / j) {j≢0}
     ∣xₙ-yₙ∣≤2/n+3/j (suc k₁) (suc k₂) = let n = suc k₁; j = suc k₂; Nⱼ = suc (proj₁ (hyp1 j)); m = j ℕ.⊔ Nⱼ in begin
        ℚ.∣ seq x n ℚ.- seq y n ∣                         ≈⟨ ℚP.∣-∣-cong (solve 4 (λ xₘ yₘ xₙ yₙ ->
@@ -152,7 +162,7 @@ equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> {!lem n {n≢0} (∣x�
           ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 2 / n) {n≢0} ℚ.+ (+ 3 / j) {j≢0}) ->
           ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 2 / n) {n≢0}
     lem (suc k₂) hyp2 = let n = suc k₂ in
-                          ℚP.≮⇒≥ (λ {hyp3 -> let arch = fast-archimedean-ℚ₂ (ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.- + 2 / n) (+ 3)
+                          ℚP.≮⇒≥ (λ hyp3 -> let arch = fast-archimedean-ℚ₂ (ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.- + 2 / n) (+ 3)
                                                         (ℚ.positive (p<q⇒0<q-p (+ 2 / n) ℚ.∣ seq x n ℚ.- seq y n ∣ hyp3))
                                                         ; j = suc (proj₁ arch)
                                                         ; Nⱼ = suc (proj₁ (hyp1 j))
@@ -162,27 +172,11 @@ equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> {!lem n {n≢0} (∣x�
       + 3 / j ℚ.+ + 2 / n                               <⟨ ℚP.+-monoˡ-< (+ 2 / n) (proj₂ arch) ⟩
       ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.- + 2 / n ℚ.+ + 2 / n ≈⟨ solve 2 (λ a b -> a ⊖ b ⊕ b ⊜ a) ℚP.≃-refl
                                                            ℚ.∣ seq x n ℚ.- seq y n ∣ (+ 2 / n) ⟩
-      ℚ.∣ seq x n ℚ.- seq y n ∣                         ≤⟨ {!∣xₙ-yₙ∣≤2/n+3/j n j!} ⟩
-      + 2 / n ℚ.+ + 3 / j                                ∎)})
-{-
-@0 ≃-trans : Transitive _≃_
-≃-trans {x} {y} {z} x≃y y≃z = equality-lemma-onlyif x z (λ { (suc k₁) ->
-                              let j = suc k₁; eqxy = fast-equality-lemma-if x y x≃y; eqyz = fast-equality-lemma-if y z y≃z
-                                      ; N₁ = proj₁ (eqxy (2 ℕ.* j)); N₂ = proj₁ (eqyz (2 ℕ.* j)); N = suc (N₁ ℕ.⊔ N₂) in
-                                      N , λ { (suc k₂) n≥N → let n = suc k₂
-                                                                     ; N₁⊔N₂≤n = ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred N)) n≥N in begin
-  ℚ.∣ seq x n ℚ.- seq z n ∣                               ≈⟨ ℚP.∣-∣-cong (solve 3 (λ xₙ yₙ zₙ ->
-                                                             xₙ ⊖ zₙ ⊜ (xₙ ⊖ yₙ ⊕ (yₙ ⊖ zₙ)))
-                                                             ℚP.≃-refl (seq x n) (seq y n) (seq z n)) ⟩
-  ℚ.∣ seq x n ℚ.- seq y n ℚ.+ (seq y n ℚ.- seq z n) ∣     ≤⟨ ℚP.∣p+q∣≤∣p∣+∣q∣ (seq x n ℚ.- seq y n) (seq y n ℚ.- seq z n) ⟩
-  ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.+ ℚ.∣ seq y n ℚ.- seq z n ∣ ≤⟨ ℚP.+-mono-≤
-                                                             (proj₂ (eqxy (2 ℕ.* j)) n (ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) N₁⊔N₂≤n))
-                                                             (proj₂ (eqyz (2 ℕ.* j)) n (ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) N₁⊔N₂≤n)) ⟩
-  + 1 / (2 ℕ.* j) ℚ.+ + 1 / (2 ℕ.* j)                     ≈⟨ ℚ.*≡* (ℤsolve 1 (λ j ->
-                                                             (κ (+ 1) :* (κ (+ 2) :* j) :+ κ (+ 1) :* (κ (+ 2) :* j)) :* j :=
-                                                             κ (+ 1) :* ((κ (+ 2) :* j) :* (κ (+ 2) :* j)))
-                                                             refl (+ j)) ⟩
-  + 1 / j                                                  ∎}})
+      ℚ.∣ seq x n ℚ.- seq y n ∣                         ≤⟨ ∣xₙ-yₙ∣≤2/n+3/j n j ⟩
+      + 2 / n ℚ.+ + 3 / j                                ∎))
+
+≃-trans : Transitive _≃_
+≃-trans {x} {y} {z} x≃y y≃z = equality-lemma-onlyif x z lem
   where
     open ℚP.≤-Reasoning
     open ℚ-Solver
@@ -194,6 +188,31 @@ equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> {!lem n {n≢0} (∣x�
         ; _⊜_  to _:=_
         ; Κ    to κ
         )
+    @0 lem : (j : ℕ) {j≢0 : j ≢0} →
+      ∃ (λ N → (n : ℕ) → n ℕ.≥ N → ℚ.∣ seq x n ℚ.- seq z n ∣ ℚ.≤ + 1 / j)
+    lem (suc k₁) = N , lem₂
+      where
+        j = suc k₁
+        eqxy = fast-equality-lemma-if x y x≃y
+        eqyz = fast-equality-lemma-if y z y≃z
+        N₁ = proj₁ (eqxy (2 ℕ.* j)); N₂ = proj₁ (eqyz (2 ℕ.* j))
+        N = suc (N₁ ℕ.⊔ N₂)
+        
+        lem₂ : (n : ℕ) → n ℕ.≥ suc (proj₁ (fast-equality-lemma-if x y x≃y (suc (k₁ ℕ.+ suc (k₁ ℕ.+ zero)))) ℕ.⊔ proj₁ (fast-equality-lemma-if y z y≃z (suc (k₁ ℕ.+ suc (k₁ ℕ.+ zero))))) →
+             ℚ.∣ seq x n ℚ.- seq z n ∣ ℚ.≤ mkℚᵘ (+ 1) k₁
+        lem₂ (suc k₂) n≥N = let n = suc k₂ ; N₁⊔N₂≤n = ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred N)) n≥N in begin
+                  ℚ.∣ seq x n ℚ.- seq z n ∣                               ≈⟨ ℚP.∣-∣-cong (solve 3 (λ xₙ yₙ zₙ ->
+                                                                              xₙ ⊖ zₙ ⊜ (xₙ ⊖ yₙ ⊕ (yₙ ⊖ zₙ)))
+                                                                              ℚP.≃-refl (seq x n) (seq y n) (seq z n)) ⟩
+                  ℚ.∣ seq x n ℚ.- seq y n ℚ.+ (seq y n ℚ.- seq z n) ∣     ≤⟨ ℚP.∣p+q∣≤∣p∣+∣q∣ (seq x n ℚ.- seq y n) (seq y n ℚ.- seq z n) ⟩
+                  ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.+ ℚ.∣ seq y n ℚ.- seq z n ∣ ≤⟨ ℚP.+-mono-≤
+                                                                             (proj₂ (eqxy (2 ℕ.* j)) n (ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) N₁⊔N₂≤n))
+                                                                             (proj₂ (eqyz (2 ℕ.* j)) n (ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) N₁⊔N₂≤n)) ⟩
+                  + 1 / (2 ℕ.* j) ℚ.+ + 1 / (2 ℕ.* j)                    ≈⟨ ℚ.*≡* (ℤsolve 1 (λ j ->
+                                                                             (κ (+ 1) :* (κ (+ 2) :* j) :+ κ (+ 1) :* (κ (+ 2) :* j)) :* j :=
+                                                                             κ (+ 1) :* ((κ (+ 2) :* j) :* (κ (+ 2) :* j)))
+                                                                            refl (+ j)) ⟩
+                  + 1 / j                                                 ∎
 
 -- Equivalence relatiion structures and reasoning packages
 
@@ -209,30 +228,37 @@ equality-lemma-onlyif x y hyp1 = *≃* λ { n {n≢0} -> {!lem n {n≢0} (∣x�
   { isEquivalence = ≃-isEquivalence
   }
 
+
 module ≃-Reasoning where
   open import Relation.Binary.Reasoning.Setoid ≃-setoid
     public
 
 -- Extras for proving properties of arithmetic operations
-regular⇒cauchy : ∀ (x : ℝ) -> ∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (m n : ℕ) ->
+@0 regular⇒cauchy : ∀ (x : ℝ) -> ∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (m n : ℕ) ->
                  m ℕ.≥ N -> n ℕ.≥ N -> ℚ.∣ seq x m ℚ.- seq x n ∣ ℚ.≤ (+ 1 / j) {j≢0}
-regular⇒cauchy x (suc k₁) = let j = suc k₁ in 2 ℕ.* j , λ { (suc k₂) (suc k₃) m≥N n≥N → let m = suc k₂; n = suc k₃ in begin 
-      ℚ.∣ seq x m ℚ.- seq x n ∣                ≤⟨ reg x m n ⟩
-      (+ 1 / m) ℚ.+ (+ 1 / n)                 ≤⟨ ℚP.+-mono-≤ (q≤r⇒+p/r≤+p/q 1 (2 ℕ.* j) m m≥N) (q≤r⇒+p/r≤+p/q 1 (2 ℕ.* j) n n≥N) ⟩
-      (+ 1 / (2 ℕ.* j)) ℚ.+ (+ 1 / (2 ℕ.* j)) ≈⟨ ℚ.*≡* (solve 1 (λ j ->
-                                                 (Κ (+ 1) ⊗ (Κ (+ 2) ⊗ j) ⊕ Κ (+ 1) ⊗ (Κ (+ 2) ⊗ j)) ⊗ j ⊜
-                                                 (Κ (+ 1) ⊗ ((Κ (+ 2) ⊗ j) ⊗ (Κ (+ 2) ⊗ j)))) refl (+ j)) ⟩
-      + 1 / j                                  ∎}
+regular⇒cauchy x (suc k₁) = 2 ℕ.* j , lem
   where
     open ℚP.≤-Reasoning
     open ℤ-Solver
 
+    j = suc k₁
+
+    @0 lem : (m n : ℕ) → m ℕ.≥ suc (k₁ ℕ.+ suc (k₁ ℕ.+ zero)) → n ℕ.≥ suc (k₁ ℕ.+ suc (k₁ ℕ.+ zero)) →
+           ℚ.∣ seq x m ℚ.- seq x n ∣ ℚ.≤ mkℚᵘ (+ 1) k₁
+    lem (suc k₂) (suc k₃) m≥N n≥N = let m = suc k₂; n = suc k₃ in begin 
+           ℚ.∣ seq x m ℚ.- seq x n ∣                ≤⟨ reg x m n ⟩
+           (+ 1 / m) ℚ.+ (+ 1 / n)                 ≤⟨ ℚP.+-mono-≤ (q≤r⇒+p/r≤+p/q 1 (2 ℕ.* j) m m≥N) (q≤r⇒+p/r≤+p/q 1 (2 ℕ.* j) n n≥N) ⟩
+           (+ 1 / (2 ℕ.* j)) ℚ.+ (+ 1 / (2 ℕ.* j)) ≈⟨ ℚ.*≡* (solve 1 (λ j ->
+                                                            (Κ (+ 1) ⊗ (Κ (+ 2) ⊗ j) ⊕ Κ (+ 1) ⊗ (Κ (+ 2) ⊗ j)) ⊗ j ⊜
+                                                            (Κ (+ 1) ⊗ ((Κ (+ 2) ⊗ j) ⊗ (Κ (+ 2) ⊗ j)))) refl (+ j)) ⟩
+           + 1 / j                                  ∎
+
 abstract
-  fast-regular⇒cauchy : ∀ (x : ℝ) -> ∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (m n : ℕ) ->
+  @0 fast-regular⇒cauchy : ∀ (x : ℝ) -> ∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (m n : ℕ) ->
                         m ℕ.≥ N -> n ℕ.≥ N -> ℚ.∣ seq x m ℚ.- seq x n ∣ ℚ.≤ (+ 1 / j) {j≢0}
   fast-regular⇒cauchy = regular⇒cauchy
 
-
+{-
 equals-to-cauchy : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
                    ∃ λ (N : ℕ) -> ∀ (m n : ℕ) -> m ℕ.≥ N -> n ℕ.≥ N ->
                    ℚ.∣ seq x m ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
