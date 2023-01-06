@@ -1401,7 +1401,7 @@ lemma-2-8-2-onlyif {x} hyp = nonNeg* (λ { (suc k₁) -> let n = suc k₁ in p-j
         )
 
 pos-cong : ∀ {x y} -> x ≃ y -> Positive x -> Positive y
-pos-cong {x} {y} x≃y posx = let fromPosx = fast-lemma-2-8-1-if posx; N₁ = suc (proj₁ fromPosx); fromx≃y = fast-equality-lemma-if x y x≃y (2 ℕ.* N₁)
+pos-cong {x} {y} x≃y posx = let fromPosx = lemma-2-8-1-if posx; N₁ = suc (proj₁ fromPosx); fromx≃y = equality-lemma-if x y x≃y (2 ℕ.* N₁)
                                      ; N₂ = suc (proj₁ fromx≃y); N = N₁ ℕ.⊔ N₂ in
                         lemma-2-8-1-onlyif {y} (ℕ.pred (2 ℕ.* N) , λ { (suc k₁) m≥2N -> let m = suc k₁ in begin
   + 1 / (2 ℕ.* N)                       ≤⟨ q≤r⇒+p/r≤+p/q 1 (2 ℕ.* N₁) (2 ℕ.* N) (ℕP.*-monoʳ-≤ 2 (ℕP.m≤m⊔n N₁ N₂)) ⟩
@@ -1430,7 +1430,7 @@ pos-cong {x} {y} x≃y posx = let fromPosx = fast-lemma-2-8-1-if posx; N₁ = su
         )
 
 pos⇒nonNeg : ∀ {x} -> Positive x -> NonNegative x
-pos⇒nonNeg {x} posx = let fromPosx = fast-lemma-2-8-1-if posx; N = suc (proj₁ fromPosx) in
+pos⇒nonNeg {x} posx = let fromPosx = lemma-2-8-1-if posx; N = suc (proj₁ fromPosx) in
                       lemma-2-8-2-onlyif (λ { (suc k₁) -> let n = suc k₁ in N , _ , λ { (suc k₂) m≥N -> let m = suc k₂ in
                       begin
   ℚ.- (+ 1 / n) <⟨ ℚP.negative⁻¹ _ ⟩
