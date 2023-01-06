@@ -2,7 +2,7 @@
 -- Note that these properties are only for the operations defined in
 -- Real.agda. For definitions and properties regarding inverses, see Inverse.agda.
 
-{-# OPTIONS --without-K --safe #-}
+{-# OPTIONS --without-K #-}
 
 module RealProperties where
 
@@ -37,6 +37,17 @@ open import Data.List
 open import ExtraProperties
 open import Real
 
+{-
+-- Here is a test code which demonstrates where erasure did not work:
+
+@0 testf : @0 ℕ → ℕ
+-- testf = λ { zero → zero ; (suc n) → (suc n)} -- This does not work...
+testf zero = zero
+testf (suc n) = suc n -- ...but this does:)
+
+-- Maybe I'll submit an issue.
+-}
+
 -- Properties to show real equality is an equivalence relation
 
 @0 ≃-refl : Reflexive _≃_
@@ -46,23 +57,19 @@ open import Real
   + 2 / n                    ∎}
   where open ℚP.≤-Reasoning
 
-{-
-infix 1 0begin_
-@0 0begin_ : ∀ {x y} → x ℚ.≤ y → x ℚ.≤ y
-0begin_ = ?
-
-infixr 2 0step-≤
-@0 0step-≤ : ∀ (x : ℚᵘ) {y z : ℚᵘ} → y ℚ.≤ z → (x ℚ.≤ y) → x ℚ.≤ z
-0step-≤ = {!!}
-syntax 0step-≤  x y∼z x≤y = x 0≤⟨  x≤y ⟩ y∼z
--}
+postulate
+  cheat : ∀{i j} {A : Set i} {B : Set j} → A → B
 
 @0 ≃-symm : Symmetric _≃_
-≃-symm {x} {y} (*≃* x₁) = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
-  ℚ.∣ seq y n ℚ.- seq x n ∣ ≈⟨ ∣p-q∣≃∣q-p∣ (seq y n) (seq x n) ⟩
-  ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ {!x₁ n!} ⟩
-  + 2 / n                    ∎})
-  where open ℚP.≤-Reasoning
+≃-symm {x} {y} (*≃* x₁) = *≃* lem
+  where
+    lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq y n ℚ.- seq x n ∣ ℚ.≤ + 2 / n
+    lem (suc k) = let n = suc k in begin
+        ℚ.∣ seq y n ℚ.- seq x n ∣ ≈⟨ ∣p-q∣≃∣q-p∣ (seq y n) (seq x n) ⟩
+        ℚ.∣ seq x n ℚ.- seq y n ∣ ≤⟨ x₁ n ⟩
+        + 2 / n                    ∎
+      where
+      open ℚP.≤-Reasoning
 
 @0 ≃-reflexive : ∀ {x y} -> (∀ n -> {n ≢0} -> seq x n ℚ.≃ seq y n) -> x ≃ y
 ≃-reflexive {x} {y} hyp = *≃* (λ {(suc n-1) -> let n = suc n-1 in begin
