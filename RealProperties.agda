@@ -258,29 +258,11 @@ abstract
                         m ℕ.≥ N -> n ℕ.≥ N -> ℚ.∣ seq x m ℚ.- seq x n ∣ ℚ.≤ (+ 1 / j) {j≢0}
   fast-regular⇒cauchy = regular⇒cauchy
 
-{-
-equals-to-cauchy : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
+
+@0 equals-to-cauchy : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
                    ∃ λ (N : ℕ) -> ∀ (m n : ℕ) -> m ℕ.≥ N -> n ℕ.≥ N ->
                    ℚ.∣ seq x m ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
-equals-to-cauchy x y x≃y (suc k₁) = let j = suc k₁; N₁ = suc (proj₁ (fast-equality-lemma-if x y x≃y (2 ℕ.* j)))
-                                          ; N₂ = proj₁ (regular⇒cauchy x (2 ℕ.* j)); N = N₁ ℕ.⊔ N₂ in
-                                    N , λ { (suc k₂) (suc k₃) m≥N n≥N -> let m = suc k₂; n = suc k₃ in begin
-      ℚ.∣ seq x m ℚ.- seq y n ∣     ≈⟨ ℚP.∣-∣-cong (solve 3 (λ xm yn xn ->
-                                       (xm ⊖ yn) ⊜ ((xm ⊖ xn) ⊕ (xn ⊖ yn)))
-                                       ℚP.≃-refl (seq x m) (seq y n) (seq x n)) ⟩
-      ℚ.∣ (seq x m ℚ.- seq x n) ℚ.+
-          (seq x n ℚ.- seq y n) ∣   ≤⟨ ℚP.∣p+q∣≤∣p∣+∣q∣ (seq x m ℚ.- seq x n)
-                                                         (seq x n ℚ.- seq y n) ⟩
-      ℚ.∣ seq x m ℚ.- seq x n ∣ ℚ.+
-      ℚ.∣ seq x n ℚ.- seq y n ∣     ≤⟨ ℚP.+-mono-≤
-                                       (proj₂ (regular⇒cauchy x (2 ℕ.* j)) m n (ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) m≥N) (ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) n≥N))
-                                       (proj₂ (fast-equality-lemma-if x y x≃y (2 ℕ.* j)) n (ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred N₁)) (ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) n≥N))) ⟩
-      (+ 1 / (2 ℕ.* j)) ℚ.+
-      (+ 1 / (2 ℕ.* j))             ≈⟨ ℚ.*≡* (ℤsolve 1 (λ j ->
-                                       (κ (+ 1) :* (κ (+ 2) :* j) :+ (κ (+ 1) :* (κ (+ 2) :* j))) :* j :=
-                                       (κ (+ 1) :* ((κ (+ 2) :* j) :* (κ (+ 2) :* j))))
-                                       refl (+ j)) ⟩
-      + 1 / j                        ∎}
+equals-to-cauchy x y x≃y (suc k₁) = N , lem
   where
     open ℚP.≤-Reasoning
     open ℚ-Solver
@@ -293,28 +275,40 @@ equals-to-cauchy x y x≃y (suc k₁) = let j = suc k₁; N₁ = suc (proj₁ (f
         ; Κ     to κ
         )
 
+    j N₁ N₂ N : ℕ
+    j = suc k₁
+    N₁ = suc (proj₁ (fast-equality-lemma-if x y x≃y (2 ℕ.* j)))
+    N₂ = proj₁ (regular⇒cauchy x (2 ℕ.* j))
+    N = N₁ ℕ.⊔ N₂
+    lem : (m n : ℕ) → m ℕ.≥ N → n ℕ.≥ N → ℚ.∣ seq x m ℚ.- seq y n ∣ ℚ.≤ mkℚᵘ (+ 1) k₁
+    lem (suc k₂) (suc k₃) m≥N n≥N = let m = suc k₂; n = suc k₃ in begin
+          ℚ.∣ seq x m ℚ.- seq y n ∣     ≈⟨ ℚP.∣-∣-cong (solve 3 (λ xm yn xn ->
+                                           (xm ⊖ yn) ⊜ ((xm ⊖ xn) ⊕ (xn ⊖ yn)))
+                                           ℚP.≃-refl (seq x m) (seq y n) (seq x n)) ⟩
+          ℚ.∣ (seq x m ℚ.- seq x n) ℚ.+
+              (seq x n ℚ.- seq y n) ∣   ≤⟨ ℚP.∣p+q∣≤∣p∣+∣q∣ (seq x m ℚ.- seq x n)
+                                                             (seq x n ℚ.- seq y n) ⟩
+          ℚ.∣ seq x m ℚ.- seq x n ∣ ℚ.+
+          ℚ.∣ seq x n ℚ.- seq y n ∣     ≤⟨ ℚP.+-mono-≤
+                                           (proj₂ (regular⇒cauchy x (2 ℕ.* j)) m n (ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) m≥N) (ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) n≥N))
+                                           (proj₂ (fast-equality-lemma-if x y x≃y (2 ℕ.* j)) n (ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred N₁)) (ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) n≥N))) ⟩
+          (+ 1 / (2 ℕ.* j)) ℚ.+
+          (+ 1 / (2 ℕ.* j))             ≈⟨ ℚ.*≡* (ℤsolve 1 (λ j ->
+                                           (κ (+ 1) :* (κ (+ 2) :* j) :+ (κ (+ 1) :* (κ (+ 2) :* j))) :* j :=
+                                           (κ (+ 1) :* ((κ (+ 2) :* j) :* (κ (+ 2) :* j))))
+                                           refl (+ j)) ⟩
+          + 1 / j                        ∎
+
 abstract
-  fast-equals-to-cauchy : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
+  @0 fast-equals-to-cauchy : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
                           ∃ λ (N : ℕ) -> ∀ (m n : ℕ) -> m ℕ.≥ N -> n ℕ.≥ N ->
                           ℚ.∣ seq x m ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
   fast-equals-to-cauchy = equals-to-cauchy
 
 -- Properties of _+_
 
-+-cong : Congruent₂ _≃_ _+_
-+-cong {x} {z} {y} {w} (*≃* x₁) (*≃* x₂) = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
-  ℚ.∣ seq x (2 ℕ.* n) ℚ.+ seq y (2 ℕ.* n) ℚ.-
-     (seq z (2 ℕ.* n) ℚ.+ seq w (2 ℕ.* n)) ∣    ≈⟨ ℚP.∣-∣-cong (solve 4 (λ x y z w ->
-                                                   (x ⊕ y ⊖ (z ⊕ w)) ⊜ ((x ⊖ z) ⊕ (y ⊖ w)))
-                                                   ℚP.≃-refl (seq x (2 ℕ.* n)) (seq y (2 ℕ.* n)) (seq z (2 ℕ.* n)) (seq w (2 ℕ.* n))) ⟩
-  ℚ.∣ seq x (2 ℕ.* n) ℚ.- seq z (2 ℕ.* n) ℚ.+
-     (seq y (2 ℕ.* n) ℚ.- seq w (2 ℕ.* n)) ∣    ≤⟨ ℚP.∣p+q∣≤∣p∣+∣q∣ (seq x (2 ℕ.* n) ℚ.- seq z (2 ℕ.* n)) (seq y (2 ℕ.* n) ℚ.- seq w (2 ℕ.* n)) ⟩
-  ℚ.∣ seq x (2 ℕ.* n) ℚ.- seq z (2 ℕ.* n) ∣ ℚ.+
-  ℚ.∣ seq y (2 ℕ.* n) ℚ.- seq w (2 ℕ.* n) ∣     ≤⟨ ℚP.+-mono-≤ (x₁ (2 ℕ.* n)) (x₂ (2 ℕ.* n)) ⟩
-  + 2 / (2 ℕ.* n) ℚ.+ + 2 / (2 ℕ.* n)           ≈⟨ ℚ.*≡* (ℤsolve 1 (λ n ->
-                                                   (κ (+ 2) :* (κ (+ 2) :* n) :+ κ (+ 2) :* (κ (+ 2) :* n)) :* n :=
-                                                   (κ (+ 2) :* ((κ (+ 2) :* n) :* (κ (+ 2) :* n)))) refl (+ n)) ⟩
-  + 2 / n                                        ∎})
+@0 +-cong : Congruent₂ _≃_ _+_
++-cong {x} {z} {y} {w} (*≃* x₁) (*≃* x₂) = *≃* (lem)
   where
     open ℚP.≤-Reasoning
     open ℚ-Solver
@@ -326,14 +320,28 @@ abstract
         ; _⊜_   to _:=_
         ; Κ     to κ
         )
+    lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq (x + y) n ℚ.- seq (z + w) n ∣ ℚ.≤ (_/_ (+ 2) n {n≢0})
+    lem (suc k₁) = let n = suc k₁ in begin
+           ℚ.∣ seq x (2 ℕ.* n) ℚ.+ seq y (2 ℕ.* n) ℚ.-
+              (seq z (2 ℕ.* n) ℚ.+ seq w (2 ℕ.* n)) ∣    ≈⟨ ℚP.∣-∣-cong (solve 4 (λ x y z w ->
+                                                            (x ⊕ y ⊖ (z ⊕ w)) ⊜ ((x ⊖ z) ⊕ (y ⊖ w)))
+                                                            ℚP.≃-refl (seq x (2 ℕ.* n)) (seq y (2 ℕ.* n)) (seq z (2 ℕ.* n)) (seq w (2 ℕ.* n))) ⟩
+           ℚ.∣ seq x (2 ℕ.* n) ℚ.- seq z (2 ℕ.* n) ℚ.+
+              (seq y (2 ℕ.* n) ℚ.- seq w (2 ℕ.* n)) ∣    ≤⟨ ℚP.∣p+q∣≤∣p∣+∣q∣ (seq x (2 ℕ.* n) ℚ.- seq z (2 ℕ.* n)) (seq y (2 ℕ.* n) ℚ.- seq w (2 ℕ.* n)) ⟩
+           ℚ.∣ seq x (2 ℕ.* n) ℚ.- seq z (2 ℕ.* n) ∣ ℚ.+
+           ℚ.∣ seq y (2 ℕ.* n) ℚ.- seq w (2 ℕ.* n) ∣     ≤⟨ ℚP.+-mono-≤ (x₁ (2 ℕ.* n)) (x₂ (2 ℕ.* n)) ⟩
+           + 2 / (2 ℕ.* n) ℚ.+ + 2 / (2 ℕ.* n)           ≈⟨ ℚ.*≡* (ℤsolve 1 (λ n ->
+                                                            (κ (+ 2) :* (κ (+ 2) :* n) :+ κ (+ 2) :* (κ (+ 2) :* n)) :* n :=
+                                                            (κ (+ 2) :* ((κ (+ 2) :* n) :* (κ (+ 2) :* n)))) refl (+ n)) ⟩
+           + 2 / n                                        ∎
 
-+-congʳ : ∀ x {y z} -> y ≃ z -> x + y ≃ x + z
+@0 +-congʳ : ∀ x {y z} -> y ≃ z -> x + y ≃ x + z
 +-congʳ x y≃z = +-cong ≃-refl y≃z
 
-+-congˡ : ∀ x {y z} -> y ≃ z -> y + x ≃ z + x
+@0 +-congˡ : ∀ x {y z} -> y ≃ z -> y + x ≃ z + x
 +-congˡ x y≃z = +-cong y≃z ≃-refl
 
-+-comm : Commutative _≃_ _+_
+@0 +-comm : Commutative _≃_ _+_
 +-comm x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ (seq x (2 ℕ.* n) ℚ.+ seq y (2 ℕ.* n)) ℚ.-
       (seq y (2 ℕ.* n) ℚ.+ seq x (2 ℕ.* n)) ∣   ≈⟨ ℚP.∣-∣-cong (solve 2 (λ x y ->
@@ -345,28 +353,8 @@ abstract
     open ℚP.≤-Reasoning
     open ℚ-Solver
 
-+-assoc : Associative _≃_ _+_
-+-assoc x y z = *≃* (λ { (suc k₁) -> let n = suc k₁; 2n = 2 ℕ.* n; 4n = 2 ℕ.* 2n in begin
-  ℚ.∣ ((seq x 4n ℚ.+ seq y 4n) ℚ.+ seq z 2n) ℚ.-
-      (seq x 2n ℚ.+ (seq y 4n ℚ.+ seq z 4n)) ∣                ≈⟨ ℚP.∣-∣-cong (solve 5 (λ x4 y4 z2 x2 z4 ->
-                                                                                  (((x4 ⊕ y4) ⊕ z2) ⊖ (x2 ⊕ (y4 ⊕ z4))) ⊜
-                                                                                  ((x4 ⊖ x2) ⊕ (z2 ⊖ z4)))
-                                                                                  ℚP.≃-refl (seq x 4n) (seq y 4n) (seq z 2n) (seq x 2n) (seq z 4n)) ⟩
-  ℚ.∣ (seq x 4n ℚ.- seq x 2n) ℚ.+ (seq z 2n ℚ.- seq z 4n) ∣   ≤⟨ ℚP.∣p+q∣≤∣p∣+∣q∣ (seq x 4n ℚ.- seq x 2n) (seq z 2n ℚ.- seq z 4n) ⟩
-  ℚ.∣ seq x 4n ℚ.- seq x 2n ∣ ℚ.+ ℚ.∣ seq z 2n ℚ.- seq z 4n ∣ ≤⟨ ℚP.+-mono-≤ (reg x 4n 2n) (reg z 2n 4n) ⟩
-  ((+ 1 / 4n) ℚ.+ (+ 1 / 2n)) ℚ.+ ((+ 1 / 2n) ℚ.+ (+ 1 / 4n)) ≈⟨ ℚ.*≡* (ℤsolve 1 ((λ 2n ->
-                                                                 ((κ (+ 1) :* 2n :+ κ (+ 1) :* (κ (+ 2) :* 2n)) :*
-                                                                 (2n :* (κ (+ 2) :* 2n)) :+
-                                                                 (κ (+ 1) :* (κ (+ 2) :* 2n) :+ κ (+ 1) :* 2n) :*
-                                                                 ((κ (+ 2) :* 2n) :* 2n)) :* 2n :=
-                                                                 κ (+ 3) :* (((κ (+ 2) :* 2n) :* 2n) :*
-                                                                 (2n :* (κ (+ 2) :* 2n)))))
-                                                                 refl (+ 2n)) ⟩
-  + 3 / 2n                                                    ≤⟨ ℚ.*≤* (ℤP.*-monoʳ-≤-nonNeg 2n (ℤ.+≤+ (ℕ.s≤s (ℕ.s≤s (ℕ.s≤s (ℕ.z≤n {1})))))) ⟩
-  + 4 / 2n                                                    ≈⟨ ℚ.*≡* (ℤsolve 1 (λ n ->
-                                                                            κ (+ 4) :* n := κ (+ 2) :* (κ (+ 2) :* n))
-                                                                            refl (+ n)) ⟩
-  + 2 / n                                                      ∎})
+@0 +-assoc : Associative _≃_ _+_
++-assoc x y z = *≃* lem
   where
     open ℚP.≤-Reasoning
     open ℚ-Solver
@@ -378,31 +366,63 @@ abstract
         ; _⊜_   to _:=_
         ; Κ     to κ
         )
+    --this is ugly, but that's what Agda gave...
+    lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq x (n ℕ.+ (n ℕ.+ zero) ℕ.+ (n ℕ.+ (n ℕ.+ zero) ℕ.+ zero)) ℚ.+ seq y (n ℕ.+ (n ℕ.+ zero) ℕ.+ (n ℕ.+ (n ℕ.+ zero) ℕ.+ zero)) ℚ.+ seq z (n ℕ.+ (n ℕ.+ zero))
+      ℚ.-
+      (seq x (n ℕ.+ (n ℕ.+ zero)) ℚ.+
+       (seq y (n ℕ.+ (n ℕ.+ zero) ℕ.+ (n ℕ.+ (n ℕ.+ zero) ℕ.+ zero)) ℚ.+
+        seq z (n ℕ.+ (n ℕ.+ zero) ℕ.+ (n ℕ.+ (n ℕ.+ zero) ℕ.+ zero))))
+      ∣
+      ℚ.≤ + 2 / n
+    lem (suc k₁) = let n = suc k₁; 2n = 2 ℕ.* n; 4n = 2 ℕ.* 2n in begin
+             ℚ.∣ ((seq x 4n ℚ.+ seq y 4n) ℚ.+ seq z 2n) ℚ.-
+                 (seq x 2n ℚ.+ (seq y 4n ℚ.+ seq z 4n)) ∣                ≈⟨ ℚP.∣-∣-cong (solve 5 (λ x4 y4 z2 x2 z4 ->
+                                                                                             (((x4 ⊕ y4) ⊕ z2) ⊖ (x2 ⊕ (y4 ⊕ z4))) ⊜
+                                                                                             ((x4 ⊖ x2) ⊕ (z2 ⊖ z4)))
+                                                                                             ℚP.≃-refl (seq x 4n) (seq y 4n) (seq z 2n) (seq x 2n) (seq z 4n)) ⟩
+             ℚ.∣ (seq x 4n ℚ.- seq x 2n) ℚ.+ (seq z 2n ℚ.- seq z 4n) ∣   ≤⟨ ℚP.∣p+q∣≤∣p∣+∣q∣ (seq x 4n ℚ.- seq x 2n) (seq z 2n ℚ.- seq z 4n) ⟩
+             ℚ.∣ seq x 4n ℚ.- seq x 2n ∣ ℚ.+ ℚ.∣ seq z 2n ℚ.- seq z 4n ∣ ≤⟨ ℚP.+-mono-≤ (reg x 4n 2n) (reg z 2n 4n) ⟩
+             ((+ 1 / 4n) ℚ.+ (+ 1 / 2n)) ℚ.+ ((+ 1 / 2n) ℚ.+ (+ 1 / 4n)) ≈⟨ ℚ.*≡* (ℤsolve 1 ((λ 2n ->
+                                                                            ((κ (+ 1) :* 2n :+ κ (+ 1) :* (κ (+ 2) :* 2n)) :*
+                                                                            (2n :* (κ (+ 2) :* 2n)) :+
+                                                                            (κ (+ 1) :* (κ (+ 2) :* 2n) :+ κ (+ 1) :* 2n) :*
+                                                                            ((κ (+ 2) :* 2n) :* 2n)) :* 2n :=
+                                                                            κ (+ 3) :* (((κ (+ 2) :* 2n) :* 2n) :*
+                                                                            (2n :* (κ (+ 2) :* 2n)))))
+                                                                            refl (+ 2n)) ⟩
+             + 3 / 2n                                                    ≤⟨ ℚ.*≤* (ℤP.*-monoʳ-≤-nonNeg 2n (ℤ.+≤+ (ℕ.s≤s (ℕ.s≤s (ℕ.s≤s (ℕ.z≤n {1})))))) ⟩
+             + 4 / 2n                                                    ≈⟨ ℚ.*≡* (ℤsolve 1 (λ n ->
+                                                                                       κ (+ 4) :* n := κ (+ 2) :* (κ (+ 2) :* n))
+                                                                                       refl (+ n)) ⟩
+             + 2 / n                                                      ∎
 
-+-identityˡ : LeftIdentity _≃_ 0ℝ _+_
-+-identityˡ x = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
-  ℚ.∣ (0ℚᵘ ℚ.+ seq x (2 ℕ.* n)) ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- seq x n) (ℚP.+-identityˡ (seq x (2 ℕ.* n)))) ⟩
-  ℚ.∣ seq x (2 ℕ.* n) ℚ.- seq x n ∣           ≤⟨ reg x (2 ℕ.* n) n ⟩
-  (+ 1 / (2 ℕ.* n)) ℚ.+ (+ 1 / n)             ≈⟨ ℚ.*≡* (solve 1 (λ n ->
-                                                 (Κ (+ 1) ⊗ n ⊕ Κ (+ 1) ⊗ (Κ (+ 2) ⊗ n)) ⊗ (Κ (+ 2) ⊗ n) ⊜
-                                                  Κ (+ 3) ⊗ ((Κ (+ 2) ⊗ n) ⊗ n))
-                                                 refl (+ n)) ⟩
-  + 3 / (2 ℕ.* n)                             ≤⟨ ℚ.*≤* (ℤP.*-monoʳ-≤-nonNeg (2 ℕ.* n) (ℤ.+≤+ (ℕ.s≤s (ℕ.s≤s (ℕ.s≤s (ℕ.z≤n {1})))))) ⟩
-  + 4 / (2 ℕ.* n)                             ≈⟨ ℚ.*≡* (solve 1 (λ n ->
-                                                 Κ (+ 4) ⊗ n ⊜ Κ (+ 2) ⊗ (Κ (+ 2) ⊗ n))
-                                                 refl (+ n)) ⟩
-  + 2 / n                                      ∎})
+@0 +-identityˡ : LeftIdentity _≃_ 0ℝ _+_
++-identityˡ x = *≃* (lem)
   where
     open ℚP.≤-Reasoning
     open ℤ-Solver
 
-+-identityʳ : RightIdentity _≃_ 0ℝ _+_
+    lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq (0ℝ + x) n ℚ.- seq x n ∣ ℚ.≤ + 2 / n
+    lem (suc k₁) = let n = suc k₁ in begin
+           ℚ.∣ (0ℚᵘ ℚ.+ seq x (2 ℕ.* n)) ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- seq x n) (ℚP.+-identityˡ (seq x (2 ℕ.* n)))) ⟩
+           ℚ.∣ seq x (2 ℕ.* n) ℚ.- seq x n ∣           ≤⟨ reg x (2 ℕ.* n) n ⟩
+           (+ 1 / (2 ℕ.* n)) ℚ.+ (+ 1 / n)             ≈⟨ ℚ.*≡* (solve 1 (λ n ->
+                                                          (Κ (+ 1) ⊗ n ⊕ Κ (+ 1) ⊗ (Κ (+ 2) ⊗ n)) ⊗ (Κ (+ 2) ⊗ n) ⊜
+                                                           Κ (+ 3) ⊗ ((Κ (+ 2) ⊗ n) ⊗ n))
+                                                          refl (+ n)) ⟩
+           + 3 / (2 ℕ.* n)                             ≤⟨ ℚ.*≤* (ℤP.*-monoʳ-≤-nonNeg (2 ℕ.* n) (ℤ.+≤+ (ℕ.s≤s (ℕ.s≤s (ℕ.s≤s (ℕ.z≤n {1})))))) ⟩
+           + 4 / (2 ℕ.* n)                             ≈⟨ ℚ.*≡* (solve 1 (λ n ->
+                                                          Κ (+ 4) ⊗ n ⊜ Κ (+ 2) ⊗ (Κ (+ 2) ⊗ n))
+                                                          refl (+ n)) ⟩
+           + 2 / n                                      ∎
+
+@0 +-identityʳ : RightIdentity _≃_ 0ℝ _+_
 +-identityʳ x = ≃-trans (+-comm x 0ℝ) (+-identityˡ x)
 
-+-identity : Identity _≃_ 0ℝ _+_
+@0 +-identity : Identity _≃_ 0ℝ _+_
 +-identity = +-identityˡ , +-identityʳ
 
-+-inverseʳ : RightInverse _≃_ 0ℝ -_ _+_
+@0 +-inverseʳ : RightInverse _≃_ 0ℝ -_ _+_
 +-inverseʳ x = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ (seq x (2 ℕ.* n) ℚ.- seq x (2 ℕ.* n)) ℚ.+ 0ℚᵘ ∣ ≈⟨ ℚP.∣-∣-cong (solve 1 (λ x -> x ⊖ x ⊕ Κ 0ℚᵘ ⊜ Κ 0ℚᵘ)
                                                          ℚP.≃-refl (seq x (2 ℕ.* n))) ⟩
@@ -412,48 +432,48 @@ abstract
     open ℚP.≤-Reasoning
     open ℚ-Solver
 
-+-inverseˡ : LeftInverse _≃_ 0ℝ -_ _+_
+@0 +-inverseˡ : LeftInverse _≃_ 0ℝ -_ _+_
 +-inverseˡ x = ≃-trans (+-comm (- x) x) (+-inverseʳ x)
 
-+-inverse : Inverse _≃_ 0ℝ -_ _+_
+@0 +-inverse : Inverse _≃_ 0ℝ -_ _+_
 +-inverse = +-inverseˡ , +-inverseʳ
 
 -- Properties of _⋆
 
-⋆-cong : ∀ {p} {q} -> p ℚ.≃ q -> p ⋆ ≃ q ⋆
+@0 ⋆-cong : ∀ {p} {q} -> p ℚ.≃ q -> p ⋆ ≃ q ⋆
 ⋆-cong {p} {q} p≃q = *≃* (λ {(suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ p ℚ.- q ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.p≃q⇒p-q≃0 p q p≃q) ⟩
   0ℚᵘ           ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n        ∎})
   where open ℚP.≤-Reasoning
 
-⋆-distrib-+ : ∀ (p r : ℚᵘ) -> (p ℚ.+ r) ⋆ ≃ p ⋆ + r ⋆
+@0 ⋆-distrib-+ : ∀ (p r : ℚᵘ) -> (p ℚ.+ r) ⋆ ≃ p ⋆ + r ⋆
 ⋆-distrib-+ x y = *≃* (λ { (suc k₁) -> let n = suc k₁; p = ↥ x; q = ↧ₙ x; u = ↥ y; v = ↧ₙ y in begin
   ℚ.∣ ((p / q) ℚ.+ (u / v)) ℚ.- ((p / q) ℚ.+ (u / v)) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ ((p / q) ℚ.+ (u / v))) ⟩
   0ℚᵘ                                                   ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   (+ 2) / n                                              ∎})
   where open ℚP.≤-Reasoning
 
-⋆-distrib-* : ∀ p q -> (p ℚ.* q) ⋆ ≃ p ⋆ * q ⋆
+@0 ⋆-distrib-* : ∀ p q -> (p ℚ.* q) ⋆ ≃ p ⋆ * q ⋆
 ⋆-distrib-* p q = *≃* (λ {(suc n-1) -> let n = suc n-1 in begin
   ℚ.∣ p ℚ.* q ℚ.- p ℚ.* q ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (p ℚ.* q)) ⟩
   0ℚᵘ                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                    ∎})
   where open ℚP.≤-Reasoning
 
-⋆-distrib-neg : ∀ (p : ℚᵘ) -> (ℚ.- p) ⋆ ≃ - (p ⋆)
+@0 ⋆-distrib-neg : ∀ (p : ℚᵘ) -> (ℚ.- p) ⋆ ≃ - (p ⋆)
 ⋆-distrib-neg p = *≃* λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ ℚ.- p ℚ.- (ℚ.- p) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (ℚ.- p)) ⟩
   0ℚᵘ                     ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   (+ 2) / n                ∎}
   where open ℚP.≤-Reasoning
 
-∣p∣⋆≃∣p⋆∣ : ∀ p -> ℚ.∣ p ∣ ⋆ ≃ ∣ p ⋆ ∣
+@0 ∣p∣⋆≃∣p⋆∣ : ∀ p -> ℚ.∣ p ∣ ⋆ ≃ ∣ p ⋆ ∣
 ∣p∣⋆≃∣p⋆∣ p = ≃-reflexive (λ {n -> ℚP.≃-refl})
 
 -- Properties of _*_
 
-*-cong : Congruent₂ _≃_ _*_
+@0 *-cong : Congruent₂ _≃_ _*_
 *-cong {x} {z} {y} {w} x≃z y≃w = equality-lemma-onlyif (x * y) (z * w) partA                                                     
   where
     open ℚP.≤-Reasoning
@@ -529,19 +549,14 @@ abstract
             N₂≤ : ∀ (k : ℕ) -> N ℕ.≤ k -> N₂ ℕ.≤ k
             N₂≤ k N≤k = ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) (ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred N)) N≤k)
 
-*-congˡ : LeftCongruent _≃_ _*_
+@0 *-congˡ : LeftCongruent _≃_ _*_
 *-congˡ y≃z = *-cong ≃-refl y≃z
 
-*-congʳ : RightCongruent _≃_ _*_
+@0 *-congʳ : RightCongruent _≃_ _*_
 *-congʳ y≃z = *-cong y≃z ≃-refl
 
-*-comm : Commutative _≃_ _*_
-*-comm x y = *≃* λ { (suc k₁) -> let n = suc k₁ in begin
-  ℚ.∣ seq (x * y) n ℚ.- seq (y * x) n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (seq (x * y) n)
-                                                      (ℚP.-‿cong (ℚP.≃-sym (xyℚ≃yxℚ n)))) ⟩
-  ℚ.∣ seq (x * y) n ℚ.- seq (x * y) n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq (x * y) n)) ⟩
-  0ℚᵘ                                   ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
-  + 2 / n                                ∎}
+@0 *-comm : Commutative _≃_ _*_
+*-comm x y = *≃* lem
   where
     open ℚP.≤-Reasoning
     xyℚ≃yxℚ : ∀ (n : ℕ) -> seq (x * y) n ℚ.≃ seq (y * x) n
@@ -556,6 +571,14 @@ abstract
       seq y (2 ℕ.* (K y ℕ.⊔ K x) ℕ.* n) ℚ.*
       seq x (2 ℕ.* (K y ℕ.⊔ K x) ℕ.* n)      ∎
 
+    lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq (x * y) n ℚ.- seq (y * x) n ∣ ℚ.≤ + 2 / n
+    lem (suc k₁) = let n = suc k₁ in begin
+           ℚ.∣ seq (x * y) n ℚ.- seq (y * x) n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (seq (x * y) n)
+                                                               (ℚP.-‿cong (ℚP.≃-sym (xyℚ≃yxℚ n)))) ⟩
+           ℚ.∣ seq (x * y) n ℚ.- seq (x * y) n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq (x * y) n)) ⟩
+           0ℚᵘ                                   ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+           + 2 / n                                ∎
+{-
 *-assoc : Associative _≃_ _*_
 *-assoc x y z = equality-lemma-onlyif (x * y * z) (x * (y * z)) lemA
   where
