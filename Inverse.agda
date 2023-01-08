@@ -306,15 +306,18 @@ x<0⇒x⁻¹<0 {x} x≄0 x<0 = let x⁻¹ = (x ⁻¹) x≄0 in
 
 x<y∧posx,y⇒y⁻¹<x⁻¹ : ∀ {x y} -> x < y -> (x≄0 : x ≄0) -> (y≄0 : y ≄0) -> Positive x -> Positive y ->
                      (y ⁻¹) y≄0 < (x ⁻¹) x≄0
-x<y∧posx,y⇒y⁻¹<x⁻¹ {x} {y} x<y x≄0 y≄0 posx posy = let x⁻¹ = (x ⁻¹) x≄0; y⁻¹ = (y ⁻¹) y≄0 in
-                   begin-strict
-  y⁻¹             ≈⟨ ≃-symm (≃-trans (*-congʳ (*-inverseʳ x x≄0)) (*-identityˡ y⁻¹)) ⟩
-  x * x⁻¹ * y⁻¹   <⟨ *-monoˡ-<-pos {y⁻¹} (posx⇒posx⁻¹ {y} y≄0 posy)
-                     (*-monoˡ-<-pos {x⁻¹} (posx⇒posx⁻¹ {x} x≄0 posx) x<y) ⟩
+x<y∧posx,y⇒y⁻¹<x⁻¹ {x} {y} x<y x≄0 y≄0 posx posy = begin-strict
+  y⁻¹             ≈⟨ {!≃-symm (≃-trans (*-congʳ (*-inverseʳ x x≄0)) (*-identityˡ y⁻¹))!} ⟩
+  x * x⁻¹ * y⁻¹   <⟨ {!*-monoˡ-<-pos {y⁻¹} (posx⇒posx⁻¹ {y} y≄0 posy)
+                     (*-monoˡ-<-pos {x⁻¹} (posx⇒posx⁻¹ {x} x≄0 posx) x<y)!} ⟩
   y * x⁻¹ * y⁻¹   ≈⟨ ≃-trans (*-congʳ (*-comm y x⁻¹)) (*-assoc x⁻¹ y y⁻¹) ⟩
   x⁻¹ * (y * y⁻¹) ≈⟨ ≃-trans (*-congˡ (*-inverseʳ y y≄0)) (*-identityʳ x⁻¹) ⟩
   x⁻¹              ∎
-  where open ≤-Reasoning
+  where
+    open ≤-Reasoning
+    x⁻¹ y⁻¹ : ℝ
+    x⁻¹ = (x ⁻¹) x≄0
+    y⁻¹ = (y ⁻¹) y≄0
 
 ⁻¹-involutive : ∀ {x} -> (x≄0 : x ≄0) -> (x⁻¹≄0 : (x ⁻¹) x≄0 ≄0) ->
                 (((x ⁻¹) x≄0) ⁻¹) x⁻¹≄0 ≃ x

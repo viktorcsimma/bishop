@@ -73,11 +73,11 @@ equality-lemma-if x y (*≃* x₁) (suc k₁) = let j = suc k₁ in 2 ℕ.* j , 
   + 1 / j                     ∎}
   where open ℚP.≤-Reasoning
 
-abstract
-  fast-equality-lemma-if : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
+--abstract
+fast-equality-lemma-if : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
                            ∃ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
                            ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
-  fast-equality-lemma-if = equality-lemma-if
+fast-equality-lemma-if = equality-lemma-if
 
 equality-lemma-onlyif : ∀ x y ->
                         (∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
@@ -209,10 +209,10 @@ regular⇒cauchy x (suc k₁) = let j = suc k₁ in 2 ℕ.* j , λ { (suc k₂) 
     open ℚP.≤-Reasoning
     open ℤ-Solver
 
-abstract
-  fast-regular⇒cauchy : ∀ (x : ℝ) -> ∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (m n : ℕ) ->
+--abstract
+fast-regular⇒cauchy : ∀ (x : ℝ) -> ∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (m n : ℕ) ->
                         m ℕ.≥ N -> n ℕ.≥ N -> ℚ.∣ seq x m ℚ.- seq x n ∣ ℚ.≤ (+ 1 / j) {j≢0}
-  fast-regular⇒cauchy = regular⇒cauchy
+fast-regular⇒cauchy = regular⇒cauchy
 
 
 equals-to-cauchy : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
@@ -249,11 +249,11 @@ equals-to-cauchy x y x≃y (suc k₁) = let j = suc k₁; N₁ = suc (proj₁ (f
         ; Κ     to κ
         )
 
-abstract
-  fast-equals-to-cauchy : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
+--abstract
+fast-equals-to-cauchy : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
                           ∃ λ (N : ℕ) -> ∀ (m n : ℕ) -> m ℕ.≥ N -> n ℕ.≥ N ->
                           ℚ.∣ seq x m ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
-  fast-equals-to-cauchy = equals-to-cauchy
+fast-equals-to-cauchy = equals-to-cauchy
 
 -- Properties of _+_
 
@@ -1343,9 +1343,9 @@ lemma-2-8-1-if {x} (pos* (n-1 , posx)) = let n = suc n-1
         ; Κ     to κ
         )
 
-abstract
-  fast-lemma-2-8-1-if : ∀ {x} -> Positive x -> ∃ λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)
-  fast-lemma-2-8-1-if = lemma-2-8-1-if
+--abstract
+fast-lemma-2-8-1-if : ∀ {x} -> Positive x -> ∃ λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)
+fast-lemma-2-8-1-if = lemma-2-8-1-if
 
 lemma-2-8-1-onlyif : ∀ {x : ℝ} -> (∃ λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)) -> Positive x
 lemma-2-8-1-onlyif {x} (N-1 , proof) = let N = suc N-1 in pos* (N , (begin-strict
@@ -1362,10 +1362,10 @@ lemma-2-8-2-if {x} (nonNeg* nonx) (suc k₁) = let n = suc k₁ in n , _ , λ {(
   seq x m        ∎}
   where open ℚP.≤-Reasoning
 
-abstract
-  fast-lemma-2-8-2-if : ∀ {x : ℝ} -> NonNegative x -> ∀ (n : ℕ) -> {n≢0 : n ≢0} ->
+--abstract
+fast-lemma-2-8-2-if : ∀ {x : ℝ} -> NonNegative x -> ∀ (n : ℕ) -> {n≢0 : n ≢0} ->
                         ∃ λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})
-  fast-lemma-2-8-2-if = lemma-2-8-2-if
+fast-lemma-2-8-2-if = lemma-2-8-2-if
 
 lemma-2-8-2-onlyif : ∀ {x : ℝ} -> (∀ (n : ℕ) -> {n≢0 : n ≢0} -> ∃ λ (Nₙ : ℕ) -> Nₙ ≢0 ×
                      (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})) -> NonNegative x
@@ -2259,9 +2259,9 @@ archimedean-ℝ x = K x , (begin-strict
   (+ (suc (K x)) / 1) ⋆  ∎)
   where open ≤-Reasoning
 
-abstract
-  fast-archimedean-ℝ : ∀ x -> ∃ λ (n-1 : ℕ) -> (+ (suc n-1) / 1) ⋆ > x
-  fast-archimedean-ℝ = archimedean-ℝ
+--abstract
+fast-archimedean-ℝ : ∀ x -> ∃ λ (n-1 : ℕ) -> (+ (suc n-1) / 1) ⋆ > x
+fast-archimedean-ℝ = archimedean-ℝ
 
 -- Density of ℚ in ℝ and corollaries
 
@@ -2329,12 +2329,12 @@ density-of-ℚ x y (pos* (n-1 , y₂ₙ-x₂ₙ>n⁻¹)) = α , 0<y-x⇒x<y x (�
                    (⊝ (Κ (+ 1) ⊗ (u ⊗ q ⊕ p ⊗ v))) ⊗ ((Κ (+ 2) ⊗ (q ⊗ v)) ⊗ q))
                    refl p q u v)
 
-abstract
-  fast-density-of-ℚ : ∀ x y -> x < y -> ∃ λ (α : ℚᵘ) -> x < α ⋆ < y
-  fast-density-of-ℚ = density-of-ℚ
+--abstract
+fast-density-of-ℚ : ∀ x y -> x < y -> ∃ λ (α : ℚᵘ) -> x < α ⋆ < y
+fast-density-of-ℚ = density-of-ℚ
 
 corollary-2-15 : ∀ (x r : ℝ) -> Positive r -> ∃ λ (α : ℚᵘ) -> ∣ x - α ⋆ ∣ < r
-corollary-2-15 x r posr = α , <-respˡ-≃ (∣x-y∣≃∣y-x∣ (α ⋆) x) (-y<x<y⇒∣x∣<y (α ⋆ - x) r (-r<α-x , α-x<r))
+corollary-2-15 x r posr = α , <-respˡ-≃ {r} {∣ α ⋆ - x ∣} {∣ x - α ⋆ ∣} (∣x-y∣≃∣y-x∣ (α ⋆) x) (-y<x<y⇒∣x∣<y (α ⋆ - x) r (-r<α-x , α-x<r))
   where
     open ℝ-Solver
     open ≤-Reasoning
@@ -2344,25 +2344,27 @@ corollary-2-15 x r posr = α , <-respˡ-≃ (∣x-y∣≃∣y-x∣ (α ⋆) x) (
       - 0ℝ  ≈⟨ ≃-symm 0≃-0 ⟩
       0ℝ    <⟨ posx⇒0<x posr ⟩
       r      ∎)
-    
+
+    αp : ∃ λ (α : ℚᵘ) -> (- r + x) < (α ⋆) < (r + x)
     αp = fast-density-of-ℚ (- r + x) (r + x) -r+x<r+x
+    α : ℚᵘ
     α = proj₁ αp
 
     -r<α-x : - r < α ⋆ - x
     -r<α-x = begin-strict
       - r           ≈⟨ solve 2 (λ r x -> (⊝ r) ⊜ (⊝ r ⊕ x ⊖ x)) ≃-refl r x ⟩
-      - r + x - x   <⟨ +-monoˡ-< (- x) (proj₁ (proj₂ αp)) ⟩
+      - r + x - x   <⟨ +-monoˡ-< (- x) { - r + x} {α ⋆} (proj₁ (proj₂ αp)) ⟩
       α ⋆ - x        ∎
 
     α-x<r : α ⋆ - x < r
     α-x<r = begin-strict
-      α ⋆ - x     <⟨ +-monoˡ-< (- x) (proj₂ (proj₂ αp)) ⟩
+      α ⋆ - x     <⟨ +-monoˡ-< (- x) {α ⋆} {r + x} (proj₂ (proj₂ αp)) ⟩
       r + x - x   ≈⟨ solve 2 (λ r x -> (r ⊕ x ⊖ x) ⊜ r) ≃-refl r x ⟩
       r            ∎
 
-abstract
-  fast-corollary-2-15 : ∀ (x r : ℝ) -> Positive r -> ∃ λ (α : ℚᵘ) -> ∣ x - α ⋆ ∣ < r
-  fast-corollary-2-15 = corollary-2-15
+--abstract
+fast-corollary-2-15 : ∀ (x r : ℝ) -> Positive r -> ∃ λ (α : ℚᵘ) -> ∣ x - α ⋆ ∣ < r
+fast-corollary-2-15 = corollary-2-15
 
 -- Properties of summations
 
@@ -2415,7 +2417,7 @@ neg-distrib-∑ xs (suc i) n = begin
                                                                   (+-congˡ (- xs i) (neg-distrib-∑ xs 0 i)))) ⟩
   ∑₀ (λ j -> - xs j) n - (∑₀ (λ j -> - xs j) i - xs i)  ∎
   where open ≃-Reasoning
- 
+{-
 x+y>0⇒x>0∨y>0 : ∀ x y -> x + y > 0ℝ -> x > 0ℝ ⊎ y > 0ℝ
 x+y>0⇒x>0∨y>0 x y x+y>0 = [ (λ hyp -> inj₁ (lem x X (proj₂ X-generator) (ℚP.<-respˡ-≃ 2⁻¹*2⁻¹α≃4⁻¹α hyp))) ,
                             (λ hyp -> inj₂ (lem y Y (proj₂ Y-generator) (ℚP.<-respˡ-≃ 2⁻¹*2⁻¹α≃4⁻¹α hyp))) ]′
@@ -2431,7 +2433,10 @@ x+y>0⇒x>0∨y>0 x y x+y>0 = [ (λ hyp -> inj₁ (lem x X (proj₂ X-generator)
         ; _⊜_   to _:=_
         ; Κ     to κ
         )
+
+    α-generator : ∃ λ (α : ℚᵘ) -> 0ℝ < α ⋆ < (x + y)
     α-generator = fast-density-of-ℚ 0ℝ (x + y) x+y>0
+    α : ℚᵘ
     α = proj₁ α-generator
 
     pos4⁻¹α : Positive (((+ 1 / 4) ℚ.* α) ⋆)
@@ -2452,7 +2457,7 @@ x+y>0⇒x>0∨y>0 x y x+y>0 = [ (λ hyp -> inj₁ (lem x X (proj₂ X-generator)
                     refl (↥ α) (↧ α))
 
     ax+ay>α/4 : X ℚ.+ Y ℚ.> (+ 1 / 2) ℚ.* α
-    ax+ay>α/4 = p⋆<q⋆⇒p<q ((+ 1 / 2) ℚ.* α) (X ℚ.+ Y) (begin-strict
+    ax+ay>α/4 = p⋆<q⋆⇒p<q ((+ 1 / 2) ℚ.* α) (X ℚ.+ Y) (begin-strict --here it gets stuck
       ((+ 1 / 2) ℚ.* α) ⋆                             ≈⟨ ⋆-cong (ℚ.*≡* (ℤsolve 2 (λ p q ->
                                                          (κ (+ 1) :* p) :* ((q :* (κ (+ 4) :* q)) :* (κ (+ 4) :* q)) :=
                                                          ((p :* (κ (+ 4) :* q) :+ (:- (κ (+ 1) :* p)) :* q) :* (κ (+ 4) :* q) :+ (:- (κ (+ 1) :* p)) :*
@@ -2499,9 +2504,9 @@ corollary-2-17 x y z y<z = [ (λ z-x>0 -> inj₁ (0<y-x⇒x<y x z z-x>0)) , (λ 
     lem : z - y ≃ (z - x) + (x - y)
     lem = solve 3 (λ x y z -> (z ⊖ y) ⊜ ((z ⊖ x) ⊕ (x ⊖ y))) ≃-refl x y z
 
-abstract
-  fast-corollary-2-17 : ∀ x y z -> y < z -> x < z ⊎ x > y
-  fast-corollary-2-17 = corollary-2-17
+--abstract
+fast-corollary-2-17 : ∀ x y z -> y < z -> x < z ⊎ x > y
+fast-corollary-2-17 = corollary-2-17
 
 -- Properties of max, the maximum over a sequence function
 m≤n⇒maxfm≤maxfn : ∀ (f : ℕ -> ℝ) -> ∀ m n -> m ℕ.≤ n -> max f m ≤ max f n
@@ -2574,5 +2579,5 @@ x≤z∧y≤z⇒x⊔y≤z {x} {y} {z} x≤z y≤z = lemma-2-8-2-onlyif lem
           seq z (2 ℕ.* m) ℚ.- seq y (2 ℕ.* m)       ≈⟨ ℚP.+-congʳ (seq z (2 ℕ.* m))
                                                        (ℚP.-‿cong (ℚP.≃-sym (ℚP.p≤q⇒p⊔q≃q x₂ₘ≤y₂ₘ))) ⟩
           seq z (2 ℕ.* m) ℚ.- seq (x ⊔ y) (2 ℕ.* m)  ∎
-
+-}
 

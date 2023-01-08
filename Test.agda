@@ -36,7 +36,7 @@ open import RealProperties
 -- open import Inverse
 
 postulate cheat : ∀{i}{A : Set i} → A
-
+{-
 --branch 1
 
 tarchimedean-ℚ : ∀ p r -> ℚ.Positive p -> ∃ λ (N : ℕ) -> r ℚ.< ((+ N) ℤ.* ↥ p) / (↧ₙ p)
@@ -66,9 +66,9 @@ tx≄0⇒pos∣x∣ : ∀ {x} -> x ≄0 -> Positive ∣ x ∣
 tx≄0⇒pos∣x∣ {x} x≄0 = t0<x⇒posx (x≄0⇒0<∣x∣ x≄0)
 -}
 
-
+-}
 Nₐ : (x : ℝ) -> (x≄0 : x ≄0) ->  ℕ
-Nₐ x x≄0 = suc (proj₁ (noabst-lemma-2-8-1-if {∣ x ∣} (x≄0⇒pos∣x∣ {x} cheat)))
+Nₐ x x≄0 = suc (proj₁ (lemma-2-8-1-if {∣ x ∣} (x≄0⇒pos∣x∣ {x} cheat)))
 
 _⁻¹ : (x : ℝ) -> (x≄0 : x ≄ 0ℝ) -> ℝ
 seq ((x ⁻¹) x≄0) n = (ℚ.1/ xₛ) {cheat}
@@ -83,12 +83,9 @@ strange1 : ℝ
 -- seq strange1 n = 1ℚᵘ
 -- seq strange1 n = + n / 1
 -- seq strange1 n = + 0 / suc n
-seq strange1 n = + 1 / suc n
--- seq strange1 n = 1ℚᵘ ℚ.+ (+ 1 / suc n)
+-- seq strange1 n = + 1 / suc n
+seq strange1 n = 1ℚᵘ ℚ.+ (+ 1 / suc n)
 reg strange1 m n = cheat
-  
-postulate
-  w : strange1 ≄ 0ℝ
 
 tonormalise : ℚᵘ
-tonormalise = seq ((strange1 ⁻¹) w) 100
+tonormalise = seq ((strange1 ⁻¹) cheat) 100
