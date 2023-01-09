@@ -1091,27 +1091,27 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   ; 1# = 1ℝ
   }
 
-abstract
-  ≃-isEquivalence₂ : IsEquivalence _≃_
-  ≃-isEquivalence₂ = ≃-isEquivalence
+--abstract
+≃-isEquivalence₂ : IsEquivalence _≃_
+≃-isEquivalence₂ = ≃-isEquivalence
   
-  +-cong₂ : Congruent₂ _≃_ _+_
-  +-cong₂ = +-cong
++-cong₂ : Congruent₂ _≃_ _+_
++-cong₂ = +-cong
 
-  -‿cong₂ : Congruent₁ _≃_ (-_)
-  -‿cong₂ = -‿cong
+-‿cong₂ : Congruent₁ _≃_ (-_)
+-‿cong₂ = -‿cong
 
-  +-inverse₂ : Inverse _≃_ 0ℝ -_ _+_
-  +-inverse₂ = +-inverse
++-inverse₂ : Inverse _≃_ 0ℝ -_ _+_
++-inverse₂ = +-inverse
 
-  +-identity₂ : Identity _≃_ 0ℝ _+_
-  +-identity₂ = +-identity
++-identity₂ : Identity _≃_ 0ℝ _+_
++-identity₂ = +-identity
 
-  +-assoc₂ : Associative _≃_ _+_
-  +-assoc₂ = +-assoc
++-assoc₂ : Associative _≃_ _+_
++-assoc₂ = +-assoc
 
-  +-comm₂ : Commutative _≃_ _+_
-  +-comm₂ = +-comm
++-comm₂ : Commutative _≃_ _+_
++-comm₂ = +-comm
 
 +-isMagma : IsMagma _≃_ _+_
 +-isMagma = record
@@ -1195,9 +1195,9 @@ abstract
   ; ε   = 1ℝ
   }
 
-abstract
-  *-cong₂ : Congruent₂ _≃_ _*_
-  *-cong₂ = *-cong
+--abstract
+*-cong₂ : Congruent₂ _≃_ _*_
+*-cong₂ = *-cong
 
 *-isMagma : IsMagma _≃_ _*_
 *-isMagma = record
@@ -1205,9 +1205,9 @@ abstract
   ; ∙-cong = *-cong₂
   }
 
-abstract
-  *-assoc₂ : Associative _≃_ _*_
-  *-assoc₂ = *-assoc
+--abstract
+*-assoc₂ : Associative _≃_ _*_
+*-assoc₂ = *-assoc
 
 *-isSemigroup : IsSemigroup _≃_ _*_
 *-isSemigroup = record
@@ -1215,9 +1215,9 @@ abstract
   ; assoc   = *-assoc₂
   }
 
-abstract
-  *-identity₂ : Identity _≃_ 1ℝ _*_
-  *-identity₂ = *-identity
+--abstract
+*-identity₂ : Identity _≃_ 1ℝ _*_
+*-identity₂ = *-identity
 
 *-1-isMonoid : IsMonoid _≃_ _*_ 1ℝ
 *-1-isMonoid = record
@@ -1232,15 +1232,15 @@ abstract
   }
 
 
-abstract
-  *-distrib-+₂ : (_≃_ DistributesOver _*_) _+_
-  *-distrib-+₂ = *-distrib-+
+--abstract
+*-distrib-+₂ : (_≃_ DistributesOver _*_) _+_
+*-distrib-+₂ = *-distrib-+
 
-  *-zero₂ : Zero _≃_ 0ℝ _*_
-  *-zero₂ = *-zero
+*-zero₂ : Zero _≃_ 0ℝ _*_
+*-zero₂ = *-zero
 
-  *-comm₂ : Commutative _≃_ _*_
-  *-comm₂ = *-comm
+*-comm₂ : Commutative _≃_ _*_
+*-comm₂ = *-comm
   
 +-*-isRing : IsRing _≃_ _+_ _*_ -_ 0ℝ 1ℝ
 +-*-isRing = record
@@ -1703,13 +1703,13 @@ module ℝ-Solver where
     ; isZero  = ℚ-isZero
     }
 
-  abstract
-    ⋆-distrib-+₂ : ∀ (p r : ℚᵘ) -> (p ℚ.+ r) ⋆ ≃ p ⋆ + r ⋆
-    ⋆-distrib-+₂   = ⋆-distrib-+
-    ⋆-distrib-*₂ : ∀ p q -> (p ℚ.* q) ⋆ ≃ p ⋆ * q ⋆
-    ⋆-distrib-*₂   = ⋆-distrib-*
-    ⋆-distrib-neg₂ : ∀ (p : ℚᵘ) -> (ℚ.- p) ⋆ ≃ - (p ⋆)
-    ⋆-distrib-neg₂ = ⋆-distrib-neg
+  --abstract
+  ⋆-distrib-+₂ : ∀ (p r : ℚᵘ) -> (p ℚ.+ r) ⋆ ≃ p ⋆ + r ⋆
+  ⋆-distrib-+₂   = ⋆-distrib-+
+  ⋆-distrib-*₂ : ∀ p q -> (p ℚ.* q) ⋆ ≃ p ⋆ * q ⋆
+  ⋆-distrib-*₂   = ⋆-distrib-*
+  ⋆-distrib-neg₂ : ∀ (p : ℚᵘ) -> (ℚ.- p) ⋆ ≃ - (p ⋆)
+  ⋆-distrib-neg₂ = ⋆-distrib-neg
 
   getMorphism : _-Raw-AlmostCommutative⟶_ ℚP.+-*-rawRing (fromCommutativeRing +-*-commutativeRing (λ x -> nothing))
   getMorphism = record

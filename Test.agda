@@ -88,4 +88,4 @@ seq strange1 n = 1ℚᵘ ℚ.+ (+ 1 / suc n)
 reg strange1 m n = cheat
 
 tonormalise : ℚᵘ
-tonormalise = seq ((strange1 ⁻¹) cheat) 100
+tonormalise = seq ((strange1 ⁻¹) cheat) 1
