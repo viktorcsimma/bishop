@@ -32,6 +32,7 @@ import NonReflectiveQ as ℚ-Solver
 import NonReflectiveZ as ℤ-Solver
 open import Data.List
 
+open import ErasureProduct
 open import ExtraProperties
 
 open ℚᵘ public
@@ -345,7 +346,7 @@ data Positive : Pred ℝ 0ℓ where
   pos* : ∀ {x} -> (∃ λ (n-1 : ℕ) -> seq x (suc n-1) ℚ.> + 1 / (suc n-1)) -> Positive x
 
 data NonNegative : Pred ℝ 0ℓ where
-  nonNeg* : ∀ {x} -> (∀ (n : ℕ) -> {n≢0 : n ≢0} -> seq x n ℚ.≥ ℚ.- ((+ 1 / n) {n≢0})) -> NonNegative x
+  nonNeg* : ∀ {x} -> @0 (∀ (n : ℕ) -> {n≢0 : n ≢0} -> seq x n ℚ.≥ ℚ.- ((+ 1 / n) {n≢0})) -> NonNegative x
 
 Negative : Pred ℝ 0ℓ
 Negative x = Positive (- x)

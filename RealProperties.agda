@@ -2,7 +2,7 @@
 -- Note that these properties are only for the operations defined in
 -- Real.agda. For definitions and properties regarding inverses, see Inverse.agda.
 
-{-# OPTIONS --without-K #-}
+{-# OPTIONS --without-K --safe #-}
 
 module RealProperties where
 
@@ -34,6 +34,7 @@ import NonReflectiveQ as ℚ-Solver
 import NonReflectiveZ as ℤ-Solver
 open import Data.List
 
+open import ErasureProduct
 open import ExtraProperties
 open import Real
 
@@ -60,9 +61,6 @@ testf2 = λ {n → n}  --without curly braces, it works
   0ℚᵘ                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                    ∎}
   where open ℚP.≤-Reasoning
-
-postulate
-  cheat : ∀{i j} {A : Set i} {B : Set j} → A → B
 
 ≃-symm : Symmetric _≃_
 ≃-symm {x} {y} (*≃* x₁) = *≃* lem
@@ -578,8 +576,8 @@ abstract
            ℚ.∣ seq (x * y) n ℚ.- seq (x * y) n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq (x * y) n)) ⟩
            0ℚᵘ                                   ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
            + 2 / n                                ∎
-{-
-*-assoc : Associative _≃_ _*_
+
+@0 *-assoc : Associative _≃_ _*_
 *-assoc x y z = equality-lemma-onlyif (x * y * z) (x * (y * z)) lemA
   where
     open ℚP.≤-Reasoning
@@ -733,7 +731,7 @@ abstract
                                                                      refl (+ K x) (+ K y) (+ j)) ⟩
               + 1 / (3 ℕ.* j)                                      ∎
 
-*-distribˡ-+ : _DistributesOverˡ_ _≃_ _*_ _+_
+@0 *-distribˡ-+ : _DistributesOverˡ_ _≃_ _*_ _+_
 *-distribˡ-+ x y z = equality-lemma-onlyif (x * (y + z)) ((x * y) + (x * z)) lemA
   where
     open ℚP.≤-Reasoning
@@ -877,7 +875,7 @@ abstract
             N₄≤_ : {m : ℕ} -> N ℕ.≤ m -> N₄ ℕ.≤ m
             N₄≤ N≤m = ℕP.≤-trans (ℕP.≤-trans (ℕP.m≤n⊔m (N₁ ℕ.⊔ N₂ ℕ.⊔ N₃) N₄) (ℕP.n≤1+n (ℕ.pred N))) N≤m
 
-*-distribʳ-+ : _DistributesOverʳ_ _≃_ _*_ _+_
+@0 *-distribʳ-+ : _DistributesOverʳ_ _≃_ _*_ _+_
 *-distribʳ-+ x y z = begin
   (y + z) * x   ≈⟨ *-comm (y + z) x ⟩
   x * (y + z)   ≈⟨ *-distribˡ-+ x y z ⟩
@@ -885,59 +883,67 @@ abstract
   y * x + z * x  ∎
   where open ≃-Reasoning
 
-*-distrib-+ : _DistributesOver_ _≃_ _*_ _+_
+@0 *-distrib-+ : _DistributesOver_ _≃_ _*_ _+_
 *-distrib-+ = *-distribˡ-+ , *-distribʳ-+
 
-*-identityˡ : LeftIdentity _≃_ 1ℝ _*_
-*-identityˡ x = *≃* (λ { (suc k₁) → let n = suc k₁; k = K 1ℝ ℕ.⊔ K x in begin
-  ℚ.∣ ℚ.1ℚᵘ ℚ.* seq x (2 ℕ.* k ℕ.* n) ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- seq x n) (ℚP.*-identityˡ (seq x (2 ℕ.* k ℕ.* n)))) ⟩
-  ℚ.∣ seq x (2 ℕ.* k ℕ.* n) ℚ.- seq x n ∣         ≤⟨ reg x (2 ℕ.* k ℕ.* n) n ⟩
-  (+ 1 / (2 ℕ.* k ℕ.* n)) ℚ.+ (+ 1 / n)           ≤⟨ ℚP.+-monoˡ-≤ (+ 1 / n) {+ 1 / (2 ℕ.* k ℕ.* n)} {+ 1 / n} (ℚ.*≤* (ℤP.*-monoˡ-≤-nonNeg 1 (ℤ.+≤+ (ℕP.m≤n*m n {2 ℕ.* k} ℕP.0<1+n)))) ⟩
-  (+ 1 / n) ℚ.+ (+ 1 / n)                         ≈⟨ ℚ.*≡* (solve 1 (λ n ->
-                                                           ((Κ (+ 1) ⊗ n ⊕ Κ (+ 1) ⊗ n) ⊗ n) ⊜ (Κ (+ 2) ⊗ (n ⊗ n)))
-                                                           refl (+ n)) ⟩
-  + 2 / n                                          ∎})
+@0 *-identityˡ : LeftIdentity _≃_ 1ℝ _*_
+*-identityˡ x = *≃* (lem)
   where
     open ℚP.≤-Reasoning
     open ℤ-Solver
 
-*-identityʳ : RightIdentity _≃_ 1ℝ _*_
+    lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq (1ℝ * x) n ℚ.- seq x n ∣ ℚ.≤ + 2 / n
+    lem (suc k₁) = let n = suc k₁; k = K 1ℝ ℕ.⊔ K x in begin
+           ℚ.∣ ℚ.1ℚᵘ ℚ.* seq x (2 ℕ.* k ℕ.* n) ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- seq x n) (ℚP.*-identityˡ (seq x (2 ℕ.* k ℕ.* n)))) ⟩
+           ℚ.∣ seq x (2 ℕ.* k ℕ.* n) ℚ.- seq x n ∣         ≤⟨ reg x (2 ℕ.* k ℕ.* n) n ⟩
+           (+ 1 / (2 ℕ.* k ℕ.* n)) ℚ.+ (+ 1 / n)           ≤⟨ ℚP.+-monoˡ-≤ (+ 1 / n) {+ 1 / (2 ℕ.* k ℕ.* n)} {+ 1 / n} (ℚ.*≤* (ℤP.*-monoˡ-≤-nonNeg 1 (ℤ.+≤+ (ℕP.m≤n*m n {2 ℕ.* k} ℕP.0<1+n)))) ⟩
+           (+ 1 / n) ℚ.+ (+ 1 / n)                         ≈⟨ ℚ.*≡* (solve 1 (λ n ->
+                                                                    ((Κ (+ 1) ⊗ n ⊕ Κ (+ 1) ⊗ n) ⊗ n) ⊜ (Κ (+ 2) ⊗ (n ⊗ n)))
+                                                                    refl (+ n)) ⟩
+           + 2 / n                                          ∎
+
+@0 *-identityʳ : RightIdentity _≃_ 1ℝ _*_
 *-identityʳ x = ≃-trans (*-comm x 1ℝ) (*-identityˡ x)
 
-*-identity : Identity _≃_ 1ℝ _*_
+@0 *-identity : Identity _≃_ 1ℝ _*_
 *-identity = *-identityˡ , *-identityʳ
 
-*-zeroˡ : LeftZero _≃_ 0ℝ _*_
+@0 *-zeroˡ : LeftZero _≃_ 0ℝ _*_
 *-zeroˡ x = *≃* (λ { (suc k₁) -> let n = suc k₁; k = K 0ℝ ℕ.⊔ K x in begin
   ℚ.∣ 0ℚᵘ ℚ.* seq x (2 ℕ.* k ℕ.* n) ℚ.- 0ℚᵘ ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- 0ℚᵘ) (ℚP.*-zeroˡ (seq x (2 ℕ.* k ℕ.* n)))) ⟩
   0ℚᵘ                                         ≤⟨ ℚ.*≤* (ℤP.≤-trans (ℤP.≤-reflexive (ℤP.*-zeroˡ (+ n))) (ℤ.+≤+ ℕ.z≤n)) ⟩
   + 2 / n                                      ∎})
   where open ℚP.≤-Reasoning
 
-*-zeroʳ : RightZero _≃_ 0ℝ _*_
+@0 *-zeroʳ : RightZero _≃_ 0ℝ _*_
 *-zeroʳ x = ≃-trans (*-comm x 0ℝ) (*-zeroˡ x)
 
-*-zero : Zero _≃_ 0ℝ _*_
+@0 *-zero : Zero _≃_ 0ℝ _*_
 *-zero = *-zeroˡ , *-zeroʳ
 
 -- Properties of -_
 
--‿cong : Congruent₁ _≃_ (-_)
--‿cong {x} {y} (*≃* x₁) = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
-  ℚ.∣ ℚ.- seq x n ℚ.- (ℚ.- seq y n) ∣ ≡⟨ trans (cong (λ x → ℚ.∣ x ∣) (sym (ℚP.neg-distrib-+ (seq x n) (ℚ.- seq y n))))
-                                               (ℚP.∣-p∣≡∣p∣ (seq x n ℚ.- seq y n)) ⟩
-  ℚ.∣ seq x n ℚ.- seq y n ∣           ≤⟨ x₁ n ⟩
-  + 2 / n                              ∎})
-  where open ℚP.≤-Reasoning
+@0 -‿cong : Congruent₁ _≃_ (-_)
+-‿cong {x} {y} (*≃* x₁) = *≃* lem
+  where
+    open ℚP.≤-Reasoning
 
-neg-involutive : Involutive _≃_ (-_)
+    lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq ((-_ Function.Base.-⟨ Function.Base.const ∣) x y) n ℚ.- seq ((Function.Base.∣ Function.Base.constᵣ ⟩- -_) x y) n ∣
+          ℚ.≤ + 2 / n
+    lem (suc k₁) = let n = suc k₁ in begin
+             ℚ.∣ ℚ.- seq x n ℚ.- (ℚ.- seq y n) ∣ ≡⟨ trans (cong (λ x → ℚ.∣ x ∣) (sym (ℚP.neg-distrib-+ (seq x n) (ℚ.- seq y n))))
+                                                          (ℚP.∣-p∣≡∣p∣ (seq x n ℚ.- seq y n)) ⟩
+             ℚ.∣ seq x n ℚ.- seq y n ∣           ≤⟨ x₁ n ⟩
+             + 2 / n                              ∎
+
+@0 neg-involutive : Involutive _≃_ (-_)
 neg-involutive x = *≃* λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ ℚ.- (ℚ.- seq x n) ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseˡ (ℚ.- seq x n)) ⟩
   0ℚᵘ                                 ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                              ∎}
   where open ℚP.≤-Reasoning
 
-neg-distrib-+ : ∀ x y -> - (x + y) ≃ (- x) + (- y)
+@0 neg-distrib-+ : ∀ x y -> - (x + y) ≃ (- x) + (- y)
 neg-distrib-+ x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ ℚ.- (seq x (2 ℕ.* n) ℚ.+ seq y (2 ℕ.* n)) ℚ.-
       (ℚ.- seq x (2 ℕ.* n) ℚ.- seq y (2 ℕ.* n)) ∣   ≈⟨ ℚP.∣-∣-cong (solve 2 (λ x y ->
@@ -951,7 +957,7 @@ neg-distrib-+ x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
 
 -- Properties of _⊔_
 
-⊔-cong : Congruent₂ _≃_ _⊔_
+@0 ⊔-cong : Congruent₂ _≃_ _⊔_
 ⊔-cong {x} {z} {y} {w} (*≃* x≃z) (*≃* y≃w) = *≃* partA
   where
     partA : ∀ (n : ℕ) -> {n≢0 : n ≢0} -> ℚ.∣ seq (x ⊔ y) n ℚ.- seq (z ⊔ w) n ∣ ℚ.≤ (+ 2 / n) {n≢0}
@@ -1010,14 +1016,14 @@ neg-distrib-+ x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
               seq x n ℚ.⊔ seq y n ℚ.- (seq z n ℚ.⊔ seq w n)       ≈⟨ ℚP.+-cong (ℚP.⊔-comm (seq x n) (seq y n)) (ℚP.-‿cong (ℚP.⊔-comm (seq z n) (seq w n))) ⟩
               seq y n ℚ.⊔ seq x n ℚ.- (seq w n ℚ.⊔ seq z n)       ≤⟨ partB (seq y n) (seq x n) (seq w n) (seq z n) hyp2 (x≃z n) ⟩
               + 2 / n                                              ∎
-  
-⊔-congˡ : LeftCongruent _≃_ _⊔_
+
+@0 ⊔-congˡ : LeftCongruent _≃_ _⊔_
 ⊔-congˡ y≃z = ⊔-cong ≃-refl y≃z
 
-⊔-congʳ : RightCongruent _≃_ _⊔_
+@0 ⊔-congʳ : RightCongruent _≃_ _⊔_
 ⊔-congʳ y≃z = ⊔-cong y≃z ≃-refl
 
-⊔-comm : Commutative _≃_ _⊔_
+@0 ⊔-comm : Commutative _≃_ _⊔_
 ⊔-comm x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ seq x n ℚ.⊔ seq y n ℚ.- (seq y n ℚ.⊔ seq x n) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (seq x n ℚ.⊔ seq y n) (ℚP.-‿cong (ℚP.⊔-comm (seq y n) (seq x n)))) ⟩
   ℚ.∣ seq x n ℚ.⊔ seq y n ℚ.- (seq x n ℚ.⊔ seq y n) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq x n ℚ.⊔ seq y n)) ⟩
@@ -1025,7 +1031,7 @@ neg-distrib-+ x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   + 2 / n                                              ∎})
   where open ℚP.≤-Reasoning
 
-⊔-assoc : Associative _≃_ _⊔_
+@0 ⊔-assoc : Associative _≃_ _⊔_
 ⊔-assoc x y z = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ seq x n ℚ.⊔ seq y n ℚ.⊔ seq z n ℚ.- (seq x n ℚ.⊔ (seq y n ℚ.⊔ seq z n)) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (seq x n ℚ.⊔ seq y n ℚ.⊔ seq z n)
                                                                                               (ℚP.-‿cong (ℚP.≃-sym (ℚP.⊔-assoc (seq x n) (seq y n) (seq z n))))) ⟩
@@ -1036,7 +1042,7 @@ neg-distrib-+ x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
 
 -- Properties of _⊓_
 
-x⊓y≃x⊓₂y : ∀ x y -> x ⊓ y ≃ x ⊓₂ y
+@0 x⊓y≃x⊓₂y : ∀ x y -> x ⊓ y ≃ x ⊓₂ y
 x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x n; yₙ = seq y n in begin
   ℚ.∣ xₙ ℚ.⊓ yₙ ℚ.- ℚ.- ((ℚ.- xₙ) ℚ.⊔ (ℚ.- yₙ)) ∣     ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (xₙ ℚ.⊓ yₙ)
                                                          (ℚP.-‿cong (ℚP.≃-trans (ℚP.neg-distrib-⊔-⊓ (ℚ.- xₙ) (ℚ.- yₙ))
@@ -1046,19 +1052,19 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   + 2 / n                                             ∎})
   where open ℚP.≤-Reasoning
 
-⊓₂-cong : Congruent₂ _≃_ _⊓₂_
+@0 ⊓₂-cong : Congruent₂ _≃_ _⊓₂_
 ⊓₂-cong x≃y u≃v = -‿cong (⊔-cong (-‿cong x≃y) (-‿cong u≃v))
 
-⊓₂-congˡ : LeftCongruent _≃_ _⊓₂_
+@0 ⊓₂-congˡ : LeftCongruent _≃_ _⊓₂_
 ⊓₂-congˡ y≃z = ⊓₂-cong ≃-refl y≃z
 
-⊓₂-congʳ : RightCongruent _≃_ _⊓₂_
+@0 ⊓₂-congʳ : RightCongruent _≃_ _⊓₂_
 ⊓₂-congʳ y≃z = ⊓₂-cong y≃z ≃-refl
 
-⊓₂-comm : Commutative _≃_ _⊓₂_
+@0 ⊓₂-comm : Commutative _≃_ _⊓₂_
 ⊓₂-comm x y = -‿cong (⊔-comm (- x) (- y))
 
-⊓₂-assoc : Associative _≃_ _⊓₂_
+@0 ⊓₂-assoc : Associative _≃_ _⊓₂_
 ⊓₂-assoc x y z = -‿cong (begin
   (- (- (- x ⊔ - y))) ⊔ (- z) ≈⟨ ⊔-congʳ (neg-involutive (- x ⊔ - y)) ⟩
   (- x ⊔ - y) ⊔ (- z)         ≈⟨ ⊔-assoc (- x) (- y) (- z) ⟩
@@ -1066,7 +1072,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   (- x) ⊔ (- (- (- y ⊔ - z)))                            ∎)
   where open ≃-Reasoning
 
-⊓-cong : Congruent₂ _≃_ _⊓_
+@0 ⊓-cong : Congruent₂ _≃_ _⊓_
 ⊓-cong {x} {u} {y} {v} x≃u y≃v = begin
   x ⊓ y  ≈⟨ x⊓y≃x⊓₂y x y ⟩
   x ⊓₂ y ≈⟨ ⊓₂-cong x≃u y≃v ⟩
@@ -1074,13 +1080,13 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   u ⊓ v   ∎
   where open ≃-Reasoning
 
-⊓-congˡ : LeftCongruent _≃_ _⊓_
+@0 ⊓-congˡ : LeftCongruent _≃_ _⊓_
 ⊓-congˡ y≃z = ⊓-cong ≃-refl y≃z
 
-⊓-congʳ : RightCongruent _≃_ _⊓_
+@0 ⊓-congʳ : RightCongruent _≃_ _⊓_
 ⊓-congʳ y≃z = ⊓-cong y≃z ≃-refl
 
-⊓-comm : Commutative _≃_ _⊓_
+@0 ⊓-comm : Commutative _≃_ _⊓_
 ⊓-comm x y = begin
   x ⊓ y  ≈⟨ x⊓y≃x⊓₂y x y ⟩
   x ⊓₂ y ≈⟨ ⊓₂-comm x y ⟩
@@ -1088,7 +1094,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   y ⊓ x   ∎
   where open ≃-Reasoning
 
-⊓-assoc : Associative _≃_ _⊓_
+@0 ⊓-assoc : Associative _≃_ _⊓_
 ⊓-assoc x y z = begin
   x ⊓ y ⊓ z     ≈⟨ ≃-trans (⊓-congʳ (x⊓y≃x⊓₂y x y)) (x⊓y≃x⊓₂y (x ⊓₂ y) z) ⟩
   x ⊓₂ y ⊓₂ z   ≈⟨ ⊓₂-assoc x y z ⟩
@@ -1098,14 +1104,18 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
 
 -- Properties of ∣_∣
 
-∣-∣-cong : Congruent₁ _≃_ ∣_∣
-∣-∣-cong {x} {y} (*≃* x≃y) = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
-  ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- ℚ.∣ seq y n ∣ ∣ ≤⟨ ∣∣p∣-∣q∣∣≤∣p-q∣ (seq x n) (seq y n) ⟩
-  ℚ.∣ seq x n ℚ.- seq y n ∣            ≤⟨ x≃y n ⟩
-  + 2 / n                               ∎})
-  where open ℚP.≤-Reasoning
+@0 ∣-∣-cong : Congruent₁ _≃_ ∣_∣
+∣-∣-cong {x} {y} (*≃* x≃y) = *≃* lem
+  where
+    open ℚP.≤-Reasoning
+    lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq ((∣_∣ Function.Base.-⟨ Function.Base.const ∣) x y) n ℚ.- seq ((Function.Base.∣ Function.Base.constᵣ ⟩- ∣_∣) x y) n ∣
+      ℚ.≤ + 2 / n
+    lem (suc k₁) = let n = suc k₁ in begin
+           ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- ℚ.∣ seq y n ∣ ∣ ≤⟨ ∣∣p∣-∣q∣∣≤∣p-q∣ (seq x n) (seq y n) ⟩
+           ℚ.∣ seq x n ℚ.- seq y n ∣            ≤⟨ x≃y n ⟩
+           + 2 / n                               ∎
 
-∣x*y∣≃∣x∣*∣y∣ : ∀ x y -> ∣ x * y ∣ ≃ ∣ x ∣ * ∣ y ∣
+@0 ∣x*y∣≃∣x∣*∣y∣ : ∀ x y -> ∣ x * y ∣ ≃ ∣ x ∣ * ∣ y ∣
 ∣x*y∣≃∣x∣*∣y∣ x y = *≃* (λ { (suc k₁) -> let n = suc k₁; r = K x ℕ.⊔ K y in begin
   ℚ.∣ ℚ.∣ seq (x * y) n ∣ ℚ.- seq (∣ x ∣ * ∣ y ∣) n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ ℚ.∣ seq (x * y) n ∣
                                                         (ℚP.-‿cong (ℚP.≃-sym (ℚP.∣p*q∣≃∣p∣*∣q∣ (seq x (2 ℕ.* r ℕ.* n)) (seq y (2 ℕ.* r ℕ.* n)))))) ⟩
@@ -1115,20 +1125,20 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   where open ℚP.≤-Reasoning
 
 -- Algebraic structures
-+-rawMagma : RawMagma 0ℓ 0ℓ
+@0 +-rawMagma : RawMagma 0ℓ 0ℓ
 +-rawMagma = record
   { _≈_ = _≃_
   ; _∙_ = _+_
   }
 
-+-rawMonoid : RawMonoid 0ℓ 0ℓ
+@0 +-rawMonoid : RawMonoid 0ℓ 0ℓ
 +-rawMonoid = record
   { _≈_ = _≃_
   ; _∙_ = _+_
   ; ε   = 0ℝ
   }
 
-+-0-rawGroup : RawGroup 0ℓ 0ℓ
+@0 +-0-rawGroup : RawGroup 0ℓ 0ℓ
 +-0-rawGroup = record
   { Carrier = ℝ
   ; _≈_ = _≃_
@@ -1137,7 +1147,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   ; _⁻¹ = -_
   }
 
-+-*-rawSemiring : RawSemiring 0ℓ 0ℓ
+@0 +-*-rawSemiring : RawSemiring 0ℓ 0ℓ
 +-*-rawSemiring = record
   { Carrier = ℝ
   ; _≈_     = _≃_
@@ -1147,7 +1157,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   ; 1#      = 1ℝ
   }
 
-+-*-rawRing : RawRing 0ℓ 0ℓ
+@0 +-*-rawRing : RawRing 0ℓ 0ℓ
 +-*-rawRing = record
   { Carrier = ℝ
   ; _≈_ = _≃_
@@ -1158,54 +1168,54 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   ; 1# = 1ℝ
   }
 
-abstract
-  ≃-isEquivalence₂ : IsEquivalence _≃_
-  ≃-isEquivalence₂ = ≃-isEquivalence
+--abstract
+@0 ≃-isEquivalence₂ : IsEquivalence _≃_
+≃-isEquivalence₂ = ≃-isEquivalence
   
-  +-cong₂ : Congruent₂ _≃_ _+_
-  +-cong₂ = +-cong
+@0 +-cong₂ : Congruent₂ _≃_ _+_
++-cong₂ = +-cong
 
-  -‿cong₂ : Congruent₁ _≃_ (-_)
-  -‿cong₂ = -‿cong
+@0 -‿cong₂ : Congruent₁ _≃_ (-_)
+-‿cong₂ = -‿cong
 
-  +-inverse₂ : Inverse _≃_ 0ℝ -_ _+_
-  +-inverse₂ = +-inverse
+@0 +-inverse₂ : Inverse _≃_ 0ℝ -_ _+_
++-inverse₂ = +-inverse
 
-  +-identity₂ : Identity _≃_ 0ℝ _+_
-  +-identity₂ = +-identity
+@0 +-identity₂ : Identity _≃_ 0ℝ _+_
++-identity₂ = +-identity
 
-  +-assoc₂ : Associative _≃_ _+_
-  +-assoc₂ = +-assoc
+@0 +-assoc₂ : Associative _≃_ _+_
++-assoc₂ = +-assoc
 
-  +-comm₂ : Commutative _≃_ _+_
-  +-comm₂ = +-comm
+@0 +-comm₂ : Commutative _≃_ _+_
++-comm₂ = +-comm
 
-+-isMagma : IsMagma _≃_ _+_
+@0 +-isMagma : IsMagma _≃_ _+_
 +-isMagma = record
   { isEquivalence = ≃-isEquivalence₂
   ; ∙-cong = +-cong₂
   }
 
 
-+-isSemigroup : IsSemigroup _≃_ _+_
+@0 +-isSemigroup : IsSemigroup _≃_ _+_
 +-isSemigroup = record
   { isMagma = +-isMagma
   ; assoc = +-assoc₂
   }
 
-+-0-isMonoid : IsMonoid _≃_ _+_ 0ℝ
+@0 +-0-isMonoid : IsMonoid _≃_ _+_ 0ℝ
 +-0-isMonoid = record
   { isSemigroup = +-isSemigroup
   ; identity = +-identity₂
   }
 
-+-0-isCommutativeMonoid : IsCommutativeMonoid _≃_ _+_ 0ℝ
+@0 +-0-isCommutativeMonoid : IsCommutativeMonoid _≃_ _+_ 0ℝ
 +-0-isCommutativeMonoid = record
   { isMonoid = +-0-isMonoid
   ; comm     = +-comm
   }
 
-+-0-isGroup : IsGroup _≃_ _+_ 0ℝ (-_)
+@0 +-0-isGroup : IsGroup _≃_ _+_ 0ℝ (-_)
 +-0-isGroup = record
   { isMonoid = +-0-isMonoid
   ; inverse = +-inverse₂
@@ -1213,103 +1223,103 @@ abstract
   }
 
 
-+-0-isAbelianGroup : IsAbelianGroup _≃_ _+_ 0ℝ (-_)
+@0 +-0-isAbelianGroup : IsAbelianGroup _≃_ _+_ 0ℝ (-_)
 +-0-isAbelianGroup = record
   { isGroup = +-0-isGroup
   ; comm    = +-comm₂
   }
 
-+-magma : Magma 0ℓ 0ℓ
+@0 +-magma : Magma 0ℓ 0ℓ
 +-magma = record
   { isMagma = +-isMagma
   }
 
-+-semigroup : Semigroup 0ℓ 0ℓ
+@0 +-semigroup : Semigroup 0ℓ 0ℓ
 +-semigroup = record
   { isSemigroup = +-isSemigroup
   }
 
-+-0-monoid : Monoid 0ℓ 0ℓ
+@0 +-0-monoid : Monoid 0ℓ 0ℓ
 +-0-monoid = record
   { isMonoid = +-0-isMonoid
   }
 
-+-0-commutativeMonoid : CommutativeMonoid 0ℓ 0ℓ
+@0 +-0-commutativeMonoid : CommutativeMonoid 0ℓ 0ℓ
 +-0-commutativeMonoid = record
   { isCommutativeMonoid = +-0-isCommutativeMonoid
   }
 
-+-0-group : Group 0ℓ 0ℓ
+@0 +-0-group : Group 0ℓ 0ℓ
 +-0-group = record
   { isGroup = +-0-isGroup
   }
 
-+-0-abelianGroup : AbelianGroup 0ℓ 0ℓ
+@0 +-0-abelianGroup : AbelianGroup 0ℓ 0ℓ
 +-0-abelianGroup = record
   { isAbelianGroup = +-0-isAbelianGroup
   }
 
-*-rawMagma : RawMagma 0ℓ 0ℓ
+@0 *-rawMagma : RawMagma 0ℓ 0ℓ
 *-rawMagma = record
   { _≈_ = _≃_
   ; _∙_ = _*_
   }
 
-*-rawMonoid : RawMonoid 0ℓ 0ℓ
+@0 *-rawMonoid : RawMonoid 0ℓ 0ℓ
 *-rawMonoid = record
   { _≈_ = _≃_
   ; _∙_ = _*_
   ; ε   = 1ℝ
   }
 
-abstract
-  *-cong₂ : Congruent₂ _≃_ _*_
-  *-cong₂ = *-cong
+--abstract
+@0 *-cong₂ : Congruent₂ _≃_ _*_
+*-cong₂ = *-cong
 
-*-isMagma : IsMagma _≃_ _*_
+@0 *-isMagma : IsMagma _≃_ _*_
 *-isMagma = record
   { isEquivalence = ≃-isEquivalence₂
   ; ∙-cong = *-cong₂
   }
 
-abstract
-  *-assoc₂ : Associative _≃_ _*_
-  *-assoc₂ = *-assoc
+--abstract
+@0 *-assoc₂ : Associative _≃_ _*_
+*-assoc₂ = *-assoc
 
-*-isSemigroup : IsSemigroup _≃_ _*_
+@0 *-isSemigroup : IsSemigroup _≃_ _*_
 *-isSemigroup = record
   { isMagma = *-isMagma
   ; assoc   = *-assoc₂
   }
 
-abstract
-  *-identity₂ : Identity _≃_ 1ℝ _*_
-  *-identity₂ = *-identity
+--abstract
+@0 *-identity₂ : Identity _≃_ 1ℝ _*_
+*-identity₂ = *-identity
 
-*-1-isMonoid : IsMonoid _≃_ _*_ 1ℝ
+@0 *-1-isMonoid : IsMonoid _≃_ _*_ 1ℝ
 *-1-isMonoid = record
   { isSemigroup = *-isSemigroup
   ; identity    = *-identity
   }
 
-*-1-isCommutativeMonoid : IsCommutativeMonoid _≃_ _*_ 1ℝ
+@0 *-1-isCommutativeMonoid : IsCommutativeMonoid _≃_ _*_ 1ℝ
 *-1-isCommutativeMonoid = record
   { isMonoid = *-1-isMonoid
   ; comm     = *-comm
   }
 
 
-abstract
-  *-distrib-+₂ : (_≃_ DistributesOver _*_) _+_
-  *-distrib-+₂ = *-distrib-+
+--abstract
+@0 *-distrib-+₂ : (_≃_ DistributesOver _*_) _+_
+*-distrib-+₂ = *-distrib-+
 
-  *-zero₂ : Zero _≃_ 0ℝ _*_
-  *-zero₂ = *-zero
+@0 *-zero₂ : Zero _≃_ 0ℝ _*_
+*-zero₂ = *-zero
 
-  *-comm₂ : Commutative _≃_ _*_
-  *-comm₂ = *-comm
+@0 *-comm₂ : Commutative _≃_ _*_
+*-comm₂ = *-comm
   
-+-*-isRing : IsRing _≃_ _+_ _*_ -_ 0ℝ 1ℝ
+@0 +-*-isRing : IsRing _≃_ _+_ _*_ -_ 0ℝ 1ℝ
 +-*-isRing = record
   { +-isAbelianGroup = +-0-isAbelianGroup
   ; *-isMonoid       = *-1-isMonoid
@@ -1317,86 +1327,75 @@ abstract
   ; zero             = *-zero₂
   }
 
-+-*-isCommutativeRing : IsCommutativeRing _≃_ _+_ _*_ -_ 0ℝ 1ℝ
+@0 +-*-isCommutativeRing : IsCommutativeRing _≃_ _+_ _*_ -_ 0ℝ 1ℝ
 +-*-isCommutativeRing = record
   { isRing = +-*-isRing
   ; *-comm = *-comm₂
   }
 
-+-*-isSemiringWithoutAnnihilatingZero : IsSemiringWithoutAnnihilatingZero _≃_ _+_ _*_ 0ℝ 1ℝ
+@0 +-*-isSemiringWithoutAnnihilatingZero : IsSemiringWithoutAnnihilatingZero _≃_ _+_ _*_ 0ℝ 1ℝ
 +-*-isSemiringWithoutAnnihilatingZero = record
   { +-isCommutativeMonoid = +-0-isCommutativeMonoid
   ; *-isMonoid            = *-1-isMonoid
   ; distrib               = *-distrib-+
   }
 
-+-*-isSemiring : IsSemiring _≃_ _+_ _*_ 0ℝ 1ℝ
+@0 +-*-isSemiring : IsSemiring _≃_ _+_ _*_ 0ℝ 1ℝ
 +-*-isSemiring = record
   { isSemiringWithoutAnnihilatingZero = +-*-isSemiringWithoutAnnihilatingZero
   ; zero                              = *-zero
   }
 
-+-*-isCommutativeSemiring : IsCommutativeSemiring _≃_ _+_ _*_ 0ℝ 1ℝ
+@0 +-*-isCommutativeSemiring : IsCommutativeSemiring _≃_ _+_ _*_ 0ℝ 1ℝ
 +-*-isCommutativeSemiring = record
   { isSemiring = +-*-isSemiring
   ; *-comm     = *-comm
   }
 
-*-magma : Magma 0ℓ 0ℓ
+@0 *-magma : Magma 0ℓ 0ℓ
 *-magma = record
   { isMagma = *-isMagma
   }
 
-*-semigroup : Semigroup 0ℓ 0ℓ
+@0 *-semigroup : Semigroup 0ℓ 0ℓ
 *-semigroup = record
   { isSemigroup = *-isSemigroup
   }
 
-*-1-monoid : Monoid 0ℓ 0ℓ
+@0 *-1-monoid : Monoid 0ℓ 0ℓ
 *-1-monoid = record
   { isMonoid = *-1-isMonoid
   }
 
-*-1-commutativeMonoid : CommutativeMonoid 0ℓ 0ℓ
+@0 *-1-commutativeMonoid : CommutativeMonoid 0ℓ 0ℓ
 *-1-commutativeMonoid = record
   { isCommutativeMonoid = *-1-isCommutativeMonoid
   }
 
-+-*-semiring : Semiring 0ℓ 0ℓ
+@0 +-*-semiring : Semiring 0ℓ 0ℓ
 +-*-semiring = record
   { isSemiring = +-*-isSemiring
   }
 
-+-*-commutativeSemiring : CommutativeSemiring 0ℓ 0ℓ
+@0 +-*-commutativeSemiring : CommutativeSemiring 0ℓ 0ℓ
 +-*-commutativeSemiring = record
   { isCommutativeSemiring = +-*-isCommutativeSemiring
   }
 
-+-*-ring : Ring 0ℓ 0ℓ
+@0 +-*-ring : Ring 0ℓ 0ℓ
 +-*-ring = record
   { isRing = +-*-isRing
   }
 
-+-*-commutativeRing : CommutativeRing 0ℓ 0ℓ
+@0 +-*-commutativeRing : CommutativeRing 0ℓ 0ℓ
 +-*-commutativeRing = record
   { isCommutativeRing = +-*-isCommutativeRing
   }
 
 -- Properties of sign predicates
 
-lemma-2-8-1-if : ∀ {x} -> Positive x -> ∃ λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)
-lemma-2-8-1-if {x} (pos* (n-1 , posx)) = let n = suc n-1
-                                                ; arch = fast-archimedean-ℚ₂ (seq x n ℚ.- + 1 / n) (+ 2) (ℚ.positive (p<q⇒0<q-p (+ 1 / n) (seq x n) posx))
-                                                ; N = suc (proj₁ arch) in ℕ.pred N , λ { (suc k₁) m≥N -> let m = suc k₁ in begin
-  + 1 / N                               ≈⟨ ℚ.*≡* (ℤsolve 1 (λ N ->
-                                           κ (+ 1) :* (N :* N) := ((κ (+ 2) :* N :- κ (+ 1) :* N) :* N))
-                                           refl (+ N)) ⟩
-  + 2 / N ℚ.- + 1 / N                   ≤⟨ ℚP.+-mono-≤ (ℚP.<⇒≤ (proj₂ arch)) (ℚP.neg-mono-≤ (q≤r⇒+p/r≤+p/q 1 N m m≥N)) ⟩
-  seq x n ℚ.- + 1 / n ℚ.- + 1 / m       ≈⟨ solve 3 (λ xₙ n⁻¹ m⁻¹ -> (xₙ ⊖ n⁻¹ ⊖ m⁻¹) ⊜ (xₙ ⊖ (n⁻¹ ⊕ m⁻¹))) ℚP.≃-refl (seq x n) (+ 1 / n) (+ 1 / m) ⟩
-  seq x n ℚ.- (+ 1 / n ℚ.+ + 1 / m)     ≤⟨ ℚP.+-monoʳ-≤ (seq x n) (ℚP.neg-mono-≤ (reg x n m)) ⟩
-  seq x n ℚ.- ℚ.∣ seq x n ℚ.- seq x m ∣ ≤⟨ ℚP.+-monoʳ-≤ (seq x n) (ℚP.neg-mono-≤ (p≤∣p∣ (seq x n ℚ.- seq x m))) ⟩
-  seq x n ℚ.- (seq x n ℚ.- seq x m)     ≈⟨ solve 2 (λ xₙ xₘ -> (xₙ ⊖ (xₙ ⊖ xₘ)) ⊜ xₘ) ℚP.≃-refl (seq x n) (seq x m) ⟩
-  seq x m  ∎}
+lemma-2-8-1-if : ∀ {x} -> Positive x -> ∃0 λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)
+lemma-2-8-1-if {x} (pos* (n-1 , posx)) = ℕ.pred N ,0 lem
   where
     open ℚP.≤-Reasoning
     open ℚ-Solver
@@ -1409,10 +1408,28 @@ lemma-2-8-1-if {x} (pos* (n-1 , posx)) = let n = suc n-1
         ; _⊜_   to _:=_
         ; Κ     to κ
         )
+    n : ℕ
+    n = suc n-1
+    arch : ∃ λ (N-1 : ℕ) -> (+ 2) / (suc N-1) ℚ.< (seq x n ℚ.- + 1 / n)
+    arch = fast-archimedean-ℚ₂ (seq x n ℚ.- + 1 / n) (+ 2) (ℚ.positive (p<q⇒0<q-p (+ 1 / n) (seq x n) posx))
+    N : ℕ
+    N = suc (proj₁ arch)
 
-abstract
-  fast-lemma-2-8-1-if : ∀ {x} -> Positive x -> ∃ λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)
-  fast-lemma-2-8-1-if = lemma-2-8-1-if
+    @0 lem : (m : ℕ) → m ℕ.≥ suc (ℕ.pred N) → seq x m ℚ.≥ + 1 / suc (ℕ.pred N)
+    lem (suc k₁) m≥N = let m = suc k₁ in begin
+           + 1 / N                               ≈⟨ ℚ.*≡* (ℤsolve 1 (λ N ->
+                                                    κ (+ 1) :* (N :* N) := ((κ (+ 2) :* N :- κ (+ 1) :* N) :* N))
+                                                    refl (+ N)) ⟩
+           + 2 / N ℚ.- + 1 / N                   ≤⟨ ℚP.+-mono-≤ (ℚP.<⇒≤ (proj₂ arch)) (ℚP.neg-mono-≤ (q≤r⇒+p/r≤+p/q 1 N m m≥N)) ⟩
+           seq x n ℚ.- + 1 / n ℚ.- + 1 / m       ≈⟨ solve 3 (λ xₙ n⁻¹ m⁻¹ -> (xₙ ⊖ n⁻¹ ⊖ m⁻¹) ⊜ (xₙ ⊖ (n⁻¹ ⊕ m⁻¹))) ℚP.≃-refl (seq x n) (+ 1 / n) (+ 1 / m) ⟩
+           seq x n ℚ.- (+ 1 / n ℚ.+ + 1 / m)     ≤⟨ ℚP.+-monoʳ-≤ (seq x n) (ℚP.neg-mono-≤ (reg x n m)) ⟩
+           seq x n ℚ.- ℚ.∣ seq x n ℚ.- seq x m ∣ ≤⟨ ℚP.+-monoʳ-≤ (seq x n) (ℚP.neg-mono-≤ (p≤∣p∣ (seq x n ℚ.- seq x m))) ⟩
+           seq x n ℚ.- (seq x n ℚ.- seq x m)     ≈⟨ solve 2 (λ xₙ xₘ -> (xₙ ⊖ (xₙ ⊖ xₘ)) ⊜ xₘ) ℚP.≃-refl (seq x n) (seq x m) ⟩
+           seq x m  ∎
+
+--abstract
+fast-lemma-2-8-1-if : ∀ {x} -> Positive x -> ∃0 λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)
+fast-lemma-2-8-1-if = lemma-2-8-1-if
 
 lemma-2-8-1-onlyif : ∀ {x : ℝ} -> (∃ λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)) -> Positive x
 lemma-2-8-1-onlyif {x} (N-1 , proof) = let N = suc N-1 in pos* (N , (begin-strict
@@ -1422,18 +1439,24 @@ lemma-2-8-1-onlyif {x} (N-1 , proof) = let N = suc N-1 in pos* (N , (begin-stric
   where open ℚP.≤-Reasoning
 
 lemma-2-8-2-if : ∀ {x : ℝ} -> NonNegative x -> ∀ (n : ℕ) -> {n≢0 : n ≢0} ->
-                 ∃ λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})
-lemma-2-8-2-if {x} (nonNeg* nonx) (suc k₁) = let n = suc k₁ in n , _ , λ {(suc k₂) m≥n -> let m = suc k₂ in begin
-  ℚ.- (+ 1 / n) ≤⟨ ℚP.neg-mono-≤ (q≤r⇒+p/r≤+p/q 1 n m m≥n) ⟩
-  ℚ.- (+ 1 / m) ≤⟨ nonx m ⟩
-  seq x m        ∎}
-  where open ℚP.≤-Reasoning
+                 ∃0 λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})
+lemma-2-8-2-if {x} (nonNeg* nonx) (suc k₁) = n ,0 _ , lem
+  where
+    open ℚP.≤-Reasoning
+    n : ℕ
+    n = suc k₁
 
-abstract
-  fast-lemma-2-8-2-if : ∀ {x : ℝ} -> NonNegative x -> ∀ (n : ℕ) -> {n≢0 : n ≢0} ->
-                        ∃ λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})
-  fast-lemma-2-8-2-if = lemma-2-8-2-if
+    @0 lem : (m : ℕ) → m ℕ.≥ suc k₁ → seq x m ℚ.≥ ℚ.- (+ 1 / suc k₁)
+    lem (suc k₂) m≥n = let m = suc k₂ in begin
+                    ℚ.- (+ 1 / n) ≤⟨ ℚP.neg-mono-≤ (q≤r⇒+p/r≤+p/q 1 n m m≥n) ⟩
+                    ℚ.- (+ 1 / m) ≤⟨ nonx m ⟩
+                    seq x m        ∎
 
+--abstract
+fast-lemma-2-8-2-if : ∀ {x : ℝ} -> NonNegative x -> ∀ (n : ℕ) -> {n≢0 : n ≢0} ->
+                      ∃0 λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})
+fast-lemma-2-8-2-if = lemma-2-8-2-if
+{-
 lemma-2-8-2-onlyif : ∀ {x : ℝ} -> (∀ (n : ℕ) -> {n≢0 : n ≢0} -> ∃ λ (Nₙ : ℕ) -> Nₙ ≢0 ×
                      (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})) -> NonNegative x
 lemma-2-8-2-onlyif {x} hyp = nonNeg* (λ { (suc k₁) -> let n = suc k₁ in p-j⁻¹≤q⇒p≤q (λ { (suc k₂) ->

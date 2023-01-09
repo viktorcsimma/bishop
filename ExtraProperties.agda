@@ -33,6 +33,8 @@ import NonReflectiveZ as ℤ-Solver
 
 open import Data.List
 
+open import ErasureProduct
+
 open ℚᵘ
 
 ∣p-q∣≃∣q-p∣ : ∀ p q -> ℚ.∣ p ℚ.- q ∣ ℚ.≃ ℚ.∣ q ℚ.- p ∣

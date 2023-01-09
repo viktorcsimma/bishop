@@ -1,0 +1,18 @@
+-- Product types (especially the existence quantifier)
+-- with a non-erased value member and an erased proof member.
+
+{-# OPTIONS --without-K --safe #-}
+
+open import Agda.Primitive
+
+record Σ0 {a b} (A : Set a) (@0 B : A → Set b) : Set (a ⊔ b) where
+  constructor _,0_
+  field
+    proj₁ : A
+    @0 proj₂ : B proj₁
+
+open Σ0 public
+infixr 4 _,0_
+
+∃0 : ∀ {a b} {A : Set a} → @0 (A → Set b) → Set (a ⊔ b)
+∃0 = Σ0 _
