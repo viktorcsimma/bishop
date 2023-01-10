@@ -16,3 +16,8 @@ infixr 4 _,0_
 
 ∃0 : ∀ {a b} {A : Set a} → @0 (A → Set b) → Set (a ⊔ b)
 ∃0 = Σ0 _
+
+_×0_ : ∀ {a b} (A : Set a) → (@0 B : Set b) → Set (a ⊔ b)
+A ×0 B = Σ0 A (λ _ → B)
+
+infixr 2 _×0_
