@@ -343,7 +343,7 @@ max f (suc n) = max f n ⊔ f (suc n)
 
 -- Sign predicates
 data Positive : Pred ℝ 0ℓ where
-  pos* : ∀ {x} -> (∃ λ (n-1 : ℕ) -> seq x (suc n-1) ℚ.> + 1 / (suc n-1)) -> Positive x
+  pos* : ∀ {x} -> (∃0 λ (n-1 : ℕ) -> seq x (suc n-1) ℚ.> + 1 / (suc n-1)) -> Positive x
 
 data NonNegative : Pred ℝ 0ℓ where
   nonNeg* : ∀ {x} -> @0 (∀ (n : ℕ) -> {n≢0 : n ≢0} -> seq x n ℚ.≥ ℚ.- ((+ 1 / n) {n≢0})) -> NonNegative x

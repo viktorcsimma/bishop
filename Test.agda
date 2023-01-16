@@ -30,6 +30,7 @@ import NonReflectiveQ as ℚ-Solver
 import NonReflectiveZ as ℤ-Solver
 open import Data.List
 
+open import ErasureProduct
 open import ExtraProperties
 open import Real
 open import RealProperties
@@ -40,9 +41,9 @@ Nₐ : (x : ℝ) -> (x≄0 : x ≄0) ->  ℕ
 Nₐ x x≄0 = suc (proj₁ (fast-lemma-2-8-1-if {∣ x ∣} (x≄0⇒pos∣x∣ {x} x≄0)))
 
 --abstract
-@0 not0-helper : ∀ (x : ℝ) -> (x≄0 : x ≄0) -> ∀ (n : ℕ) ->
+not0-helper : ∀ (x : ℝ) -> (x≄0 : x ≄0) -> ∀ (n : ℕ) ->
                 ℤ.∣ ↥ (seq x ((n ℕ.+ (Nₐ x x≄0)) ℕ.* ((Nₐ x x≄0) ℕ.* (Nₐ x x≄0)))) ∣ ≢0
-not0-helper x x≄0 n = cheat {-ℚP.p≄0⇒∣↥p∣≢0 xₛ (ℚ≠-helper xₛ ([ left , right ]′ (ℚP.∣p∣≡p∨∣p∣≡-p xₛ)))
+not0-helper x x≄0 n = ℚP.p≄0⇒∣↥p∣≢0 xₛ (ℚ≠-helper xₛ ([ left , right ]′ (ℚP.∣p∣≡p∨∣p∣≡-p xₛ)))
     where
       open ℚP.≤-Reasoning
 
@@ -55,8 +56,8 @@ not0-helper x x≄0 n = cheat {-ℚP.p≄0⇒∣↥p∣≢0 xₛ (ℚ≠-helper 
       0<∣xₛ∣ : 0ℚᵘ ℚ.< ℚ.∣ xₛ ∣
       0<∣xₛ∣ = begin-strict
         0ℚᵘ     <⟨ ℚP.positive⁻¹ _ ⟩
-        + 1 / N ≤⟨ proj₂ (fast-lemma-2-8-1-if {∣ x ∣} (x≄0⇒pos∣x∣ {x} x≄0)) ((n ℕ.+ N) ℕ.* (N ℕ.* N))
-                 (ℕP.≤-trans (ℕP.m≤n*m N {N} ℕP.0<1+n) (ℕP.m≤n*m (N ℕ.* N) {n ℕ.+ N} (subst (0 ℕ.<_) (ℕP.+-comm N n) ℕP.0<1+n))) ⟩
+        + 1 / N ≤⟨ cheat {-proj₂ (fast-lemma-2-8-1-if {∣ x ∣} (x≄0⇒pos∣x∣ {x} x≄0)) ((n ℕ.+ N) ℕ.* (N ℕ.* N))
+                 (ℕP.≤-trans (ℕP.m≤n*m N {N} ℕP.0<1+n) (ℕP.m≤n*m (N ℕ.* N) {n ℕ.+ N} (subst (0 ℕ.<_) (ℕP.+-comm N n) ℕP.0<1+n)))-} ⟩
         ℚ.∣ xₛ ∣  ∎
 
       left : ℚ.∣ xₛ ∣ ≡ xₛ -> xₛ ℚ.> 0ℚᵘ ⊎ xₛ ℚ.< 0ℚᵘ
@@ -70,7 +71,7 @@ not0-helper x x≄0 n = cheat {-ℚP.p≄0⇒∣↥p∣≢0 xₛ (ℚ≠-helper 
         xₛ            ≈⟨ ℚP.≃-sym (ℚP.neg-involutive xₛ) ⟩
         ℚ.- (ℚ.- xₛ)  ≡⟨ cong ℚ.-_ (sym hyp) ⟩
         ℚ.- ℚ.∣ xₛ ∣  <⟨ ℚP.neg-mono-< 0<∣xₛ∣ ⟩
-        0ℚᵘ            ∎)-}
+        0ℚᵘ            ∎)
 
 
 --Had to declare separately as abstract in order to typecheck fast enough.
@@ -128,7 +129,7 @@ inverse-helper x x≄0 n = begin
 
 -- Definition of the multiplicative inverse function _⁻¹
 _⁻¹ : (x : ℝ) -> (x≄0 : x ≄ 0ℝ) -> ℝ
-seq ((x ⁻¹) x≄0) n = (ℚ.1/ xₛ) {not0-helper x x≄0 n}
+seq ((x ⁻¹) x≄0) n = (ℚ.1/ xₛ) {cheat {-not0-helper x x≄0 n-}}
   where
     open ℚP.≤-Reasoning
     N = Nₐ x x≄0
@@ -189,12 +190,18 @@ reg ((x ⁻¹) x≄0) (suc k₁) (suc k₂) = begin
                                  (inverse-helper x x≄0 m) (inverse-helper x x≄0 n) ⟩
       (+ N / 1) ℚ.* (+ N / 1)   ∎
 
-+p≤+q⇒1/q≤1/p : ∀ {p q} -> (posp : ℚ.Positive p) -> (posq : ℚ.Positive q) -> p ℚ.≤ q ->
-                (ℚ.1/ q) {ℚP.p≄0⇒∣↥p∣≢0 q (ℚ≠-helper q (inj₁ (ℚP.positive⁻¹ posq)))} ℚ.≤ (ℚ.1/ p) {ℚP.p≄0⇒∣↥p∣≢0 p (ℚ≠-helper p (inj₁ (ℚP.positive⁻¹ posp)))}
-+p≤+q⇒1/q≤1/p {mkℚᵘ (+ suc p-1) q-1} {mkℚᵘ (+ suc u-1) v-1} posp/q posu/v p/q≤u/v = let p = + suc p-1; q = + suc q-1; u = + suc u-1; v = + suc v-1 in
-                                                                                    ℚ.*≤* (begin
-  v ℤ.* p ≡⟨ ℤP.*-comm v p ⟩
-  p ℤ.* v ≤⟨ ℚP.drop-*≤* p/q≤u/v ⟩
-  u ℤ.* q ≡⟨ ℤP.*-comm u q ⟩
-  q ℤ.* u  ∎)
-  where open ℤP.≤-Reasoning
+odd1 : ℝ
+seq odd1 n = 1ℚᵘ ℚ.+ (+ 1 / suc n)
+reg odd1 = cheat
+
+odd1≄0 : odd1 ≄0
+odd1≄0 = inj₂ (pos* (0 , ℚ.*<* (ℤ.+<+ (ℕ.s≤s (ℕ.s≤s (ℕ.s≤s (ℕ.s≤s ℕ.z≤n)))))))
+
+odd1⁻¹ : ℝ
+odd1⁻¹ = (odd1 ⁻¹) odd1≄0
+
+toevalpre : ℕ
+toevalpre = Nₐ odd1 odd1≄0
+
+toeval : ℚᵘ
+toeval = seq odd1⁻¹ 100

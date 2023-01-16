@@ -58,7 +58,7 @@ p≤∣p∣ : ∀ p -> p ℚ.≤ ℚ.∣ p ∣
 p≤∣p∣ (mkℚᵘ (+_ n) denominator-2) = ℚP.≤-refl
 p≤∣p∣ (mkℚᵘ (-[1+_] n) denominator-2) = ℚ.*≤* ℤ.-≤+
 
-archimedean-ℚ : ∀ p r -> ℚ.Positive p -> ∃ λ (N : ℕ) -> r ℚ.< ((+ N) ℤ.* ↥ p) / (↧ₙ p)
+archimedean-ℚ : ∀ p r -> @0 ℚ.Positive p -> ∃0 λ (N : ℕ) -> r ℚ.< ((+ N) ℤ.* ↥ p) / (↧ₙ p)
 archimedean-ℚ (mkℚᵘ +[1+ g ] q-1) (mkℚᵘ u v-1) posp = let p = suc g; q = suc q-1; v = suc v-1
                                                             ; r = (u ℤ.* + q) modℕ (p ℕ.* v); t = (u ℤ.* + q) divℕ (p ℕ.* v) in
                                                       suc ℤ.∣ t ∣ , ℚ.*<* (begin-strict
@@ -76,7 +76,7 @@ archimedean-ℚ (mkℚᵘ +[1+ g ] q-1) (mkℚᵘ u v-1) posp = let p = suc g; q
     open ℤ-Solver
 
 abstract
-  fast-archimedean-ℚ : ∀ p r -> ℚ.Positive p -> ∃ λ (N : ℕ) -> r ℚ.< ((+ N) ℤ.* ↥ p) / (↧ₙ p)
+  fast-archimedean-ℚ : ∀ p r -> @0 ℚ.Positive p -> ∃0 λ (N : ℕ) -> r ℚ.< ((+ N) ℤ.* ↥ p) / (↧ₙ p)
   fast-archimedean-ℚ = archimedean-ℚ
 
 q≤r⇒+p/r≤+p/q : ∀ p q r -> {q≢0 : q ≢0} -> {r≢0 : r ≢0} -> q ℕ.≤ r -> (+ p / r) {r≢0} ℚ.≤ (+ p / q) {q≢0}
@@ -92,7 +92,7 @@ p≤q⇒p/r≤q/r p q (suc k₁) p≤q = ℚ.*≤* (ℤP.*-monoʳ-≤-nonNeg (su
 p<q⇒p/r<q/r : (p q : ℤ) (r : ℕ) {r≢0 : r ≢0} → p ℤ.< q → (p / r) {r≢0} ℚ.< (q / r) {r≢0}
 p<q⇒p/r<q/r p q (suc r-1) p<q = ℚ.*<* (ℤP.*-monoʳ-<-pos r-1 p<q)
 
-archimedean-ℚ₂ : ∀ (p : ℚᵘ) -> ∀ (r : ℤ) -> ℚ.Positive p -> ∃ λ (N-1 : ℕ) -> r / (suc N-1) ℚ.< p
+archimedean-ℚ₂ : ∀ (p : ℚᵘ) -> ∀ (r : ℤ) -> @0 ℚ.Positive p -> ∃0 λ (N-1 : ℕ) -> r / (suc N-1) ℚ.< p
 archimedean-ℚ₂ (mkℚᵘ (+_ p) q-1) r posp/q = let q = suc q-1; N-1 = proj₁ (fast-archimedean-ℚ (+ p / q) (r / 1) posp/q); N = suc N-1 in N-1 , (begin-strict
   r / N                             ≈⟨ ℚ.*≡* (sym (ℤP.*-assoc r (+ 1) (+ N))) ⟩
   r / 1 ℚ.* (+ 1 / N)               <⟨ ℚP.*-monoˡ-<-pos _ (proj₂ (fast-archimedean-ℚ (+ p / q) (r / 1) posp/q)) ⟩
@@ -105,7 +105,7 @@ archimedean-ℚ₂ (mkℚᵘ (+_ p) q-1) r posp/q = let q = suc q-1; N-1 = proj�
     open ℤ-Solver
 
 abstract
-  fast-archimedean-ℚ₂ : ∀ (p : ℚᵘ) -> ∀ (r : ℤ) -> ℚ.Positive p -> ∃ λ (N-1 : ℕ) -> r / (suc N-1) ℚ.< p
+  fast-archimedean-ℚ₂ : ∀ (p : ℚᵘ) -> ∀ (r : ℤ) -> @0 ℚ.Positive p -> ∃0 λ (N-1 : ℕ) -> r / (suc N-1) ℚ.< p
   fast-archimedean-ℚ₂ = archimedean-ℚ₂
 
 p<q⇒0<q-p : ∀ p q -> p ℚ.< q -> 0ℚᵘ ℚ.< q ℚ.- p
@@ -181,12 +181,12 @@ least-ℤ>ℚ p/q = let p = ↥ p/q; q = ↧ₙ p/q; r = p modℕ q; t = p div�
 p≤r⇒p/q≤r/q : ∀ (p r : ℤ) -> ∀ (q : ℕ) -> {q≢0 : q ≢0} -> p ℤ.≤ r -> (p / q) {q≢0} ℚ.≤ (r / q) {q≢0}
 p≤r⇒p/q≤r/q p r (suc k₁) p≤r = let q = suc k₁ in ℚ.*≤* (ℤP.*-monoʳ-≤-nonNeg q p≤r)
 
-p-q≤j⁻¹⇒p≤q : ∀ {p q : ℚᵘ} ->
+@0 p-q≤j⁻¹⇒p≤q : ∀ {p q : ℚᵘ} ->
               (∀ (j : ℕ) -> {j≢0 : j ≢0} -> p ℚ.- q ℚ.≤ (+ 1 / j) {j≢0}) -> p ℚ.≤ q
 p-q≤j⁻¹⇒p≤q {p} {q} hyp = ℚP.≮⇒≥ λ q<p -> let arch = fast-archimedean-ℚ₂ (p ℚ.- q) (+ 1) (ℚ.positive (p<q⇒0<q-p q p q<p)); j = suc (proj₁ arch) in
                       ℚP.<⇒≱ (proj₂ arch) (hyp j)
 
-p-j⁻¹≤q⇒p≤q : ∀ {p q : ℚᵘ} -> (∀ (j : ℕ) -> {j≢0 : j ≢0} -> p ℚ.- (+ 1 / j) {j≢0} ℚ.≤ q) -> p ℚ.≤ q
+@0 p-j⁻¹≤q⇒p≤q : ∀ {p q : ℚᵘ} -> (∀ (j : ℕ) -> {j≢0 : j ≢0} -> p ℚ.- (+ 1 / j) {j≢0} ℚ.≤ q) -> p ℚ.≤ q
 p-j⁻¹≤q⇒p≤q {p} {q} hyp = p-q≤j⁻¹⇒p≤q λ { (suc k₁) -> let j = suc k₁ in begin
   p ℚ.- q                         ≈⟨ solve 3 (λ p q j⁻¹ ->
                                      (p ⊖ q) ⊜ (p ⊖ j⁻¹ ⊖ q ⊕ j⁻¹))
@@ -275,7 +275,7 @@ p+q>r⇒p>2⁻¹r∨q>2⁻¹r p q r p+q>r = [ (λ hyp -> inj₁ (lem hyp)) , (λ
     open ℚP.≤-Reasoning
     open ℚ-Solver
 
-p-q≥j⁻¹⇒p≥q : ∀ {p q : ℚᵘ} ->
+@0 p-q≥j⁻¹⇒p≥q : ∀ {p q : ℚᵘ} ->
               (∀ (j : ℕ) -> {j≢0 : j ≢0} -> p ℚ.- q ℚ.≥ (+ 1 / j) {j≢0}) -> p ℚ.≥ q
 p-q≥j⁻¹⇒p≥q {p} {q} hyp = ℚP.≮⇒≥ (λ p<q -> let arch = fast-archimedean-ℚ₂ (q ℚ.- p) (+ 1) (ℚ.positive (p<q⇒0<q-p p q p<q))
                                                     ; j = suc (proj₁ arch) in
@@ -296,7 +296,7 @@ p-q≥j⁻¹⇒p≥q {p} {q} hyp = ℚP.≮⇒≥ (λ p<q -> let arch = fast-arc
 m<1+n⇒m≤n : ∀ m n -> m ℕ.< suc n -> m ℕ.≤ n
 m<1+n⇒m≤n m n (ℕ.s≤s m≤n) = m≤n
 
-p≤q+j⁻¹⇒p≤q : ∀ {p q} -> (∀ j -> {j≢0 : j ≢0} -> p ℚ.≤ q ℚ.+ (+ 1 / j) {j≢0}) -> p ℚ.≤ q
+@0 p≤q+j⁻¹⇒p≤q : ∀ {p q} -> (∀ j -> {j≢0 : j ≢0} -> p ℚ.≤ q ℚ.+ (+ 1 / j) {j≢0}) -> p ℚ.≤ q
 p≤q+j⁻¹⇒p≤q {p} {q} hyp = p-q≤j⁻¹⇒p≤q (λ {(suc j-1) -> let j = suc j-1 in begin
   p ℚ.- q             ≤⟨ ℚP.+-monoˡ-≤ (ℚ.- q) (hyp j) ⟩
   q ℚ.+ + 1 / j ℚ.- q ≈⟨ solve 2 (λ q j⁻¹ -> (q ⊕ j⁻¹ ⊖ q) ⊜ j⁻¹) ℚP.≃-refl q (+ 1 / j) ⟩

@@ -6,13 +6,13 @@
 open import Agda.Primitive
 
 record Σ0 {a b} (A : Set a) (@0 B : A → Set b) : Set (a ⊔ b) where
-  constructor _,0_
+  constructor _,_
   field
     proj₁ : A
     @0 proj₂ : B proj₁
 
 open Σ0 public
-infixr 4 _,0_
+infixr 4 _,_
 
 ∃0 : ∀ {a b} {A : Set a} → @0 (A → Set b) → Set (a ⊔ b)
 ∃0 = Σ0 _
