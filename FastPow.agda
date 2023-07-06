@@ -1,5 +1,5 @@
 -- A planned function for a modular exponentiation function.
--- Created because pow (strangify (+ 1 / 2)) seems to hang when trying to take a denominator of a member of the sequence.
+-- Created because pow (strangify (+ 1 / 2)) 10 seems to hang when trying to take a denominator of a member of the sequence.
 
 {-# OPTIONS --without-K #-}
 
@@ -36,11 +36,29 @@ open import ErasureProduct
 open import ExtraProperties
 open import Real
 open import RealProperties
+open import Test
 
-open import Data.Nat.DivMod as ℕD
+open import Data.Nat.GCD
+import Data.Nat.DivMod as ℕD
+
+{- Ideas for normalization
+--Normalizing an unnormalised rational number. Used to lower the enormous numerators and denominators that are produced during an exponentiation.
+--Is based on a function in Data.Rational.Base.
+normalizeℕ×ℕ : (m n : ℕ) .{{_ : ℕ.NonZero n}} → (ℕ × ℕ)
+normalizeℕ×ℕ m n = (m ℕD./ gcd m n) {{!g≢0!}} , (n ℕD./ gcd m n) {{!!}}
+  where
+    instance
+      g≢0   = ℕ.≢-nonZero (gcd[m,n]≢0 m n (inj₂ {!ℕ.≢-nonZero⁻¹ n!}))
+      n/g≢0 = ℕ.≢-nonZero {!n/gcd[m,n]≢0 m n {{gcd≢0 = g≢0}}!}
+
+normalizeℚᵘ : ℚᵘ → ℚᵘ
+normalizeℚᵘ (mkℚᵘ (+ m) n-1) = ? --(+ (proj₁ t) / (proj₂ t))
+  where
+    t = normalizeℕ×ℕ m (suc n-1)
+-}
 
 even : ℕ → Bool
-even n = is0 (n % 2)
+even n = is0 (n ℕD.% 2)
   where
     is0 : ℕ → Bool
     is0 zero = Bool.true
@@ -52,6 +70,7 @@ even n = is0 (n % 2)
 fast-pow : ℝ → ℕ → ℝ
 fast-pow x n = go x n 1ℝ
   where
+    -- what about normalising ℚᵘ-s? there are pretty large denominators here
     go : ℝ → ℕ → ℝ → ℝ
     go base zero res = res
     go base exp res = go (base * base) (exp ℕD./ 2) (if (even exp) then res else res * base)
