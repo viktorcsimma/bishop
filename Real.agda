@@ -326,6 +326,7 @@ reg ∣ x ∣ (suc k₁) (suc k₂) = let m = suc k₁; n = suc k₂ in begin
 1ℝ = 1ℚᵘ ⋆
 
 -- Exponentiation for natural powers
+-- Beware: this gets stuck for strangify (+ 1 / 2), at least when we get the denominator of an element of the rational sequence!
 pow : ℝ -> ℕ -> ℝ
 pow x 0 = 1ℝ
 pow x (suc n) = pow x n * x
