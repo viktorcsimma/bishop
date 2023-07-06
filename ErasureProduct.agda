@@ -1,5 +1,6 @@
 -- Product types (especially the existence quantifier)
 -- with a non-erased value member and an erased proof member.
+-- ∃0 will often be used throughout the library.
 
 {-# OPTIONS --without-K --safe #-}
 
