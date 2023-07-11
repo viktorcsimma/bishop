@@ -9,25 +9,30 @@ type ℚᵘ = Rational
 denominatorℕ :: Rational -> Natural
 denominatorℕ = fromInteger . denominator
 
---() divℕ => `divℕ`
+--() "divℕ" => "`divℕ`"
 divℕ :: Integer -> Natural -> Integer
 divℕ z n = z `div` (fromIntegral n)
 
---() ℤ.∣_∣ => intAbs
+--() "ℤ.∣_∣" => "intAbs"
 intAbs :: Integer -> Natural
 intAbs = fromInteger . abs
 
 suc :: Natural -> Natural
 suc n = n+1
 
---() ℚ.+ => +
---() ℚ.∣_∣ => abs
+--() "ℕ.*" => "*"
 
---() ℕD./ => `div`
+--() "ℚ.+" => "+"
+--() "ℚ.-_" => "-"
+--() "ℚ.*" => "*"
+--() "ℚ.∣_∣" => "abs"
 
---() pos => ε (it can be omitted)
---() a / b => a % b
---() -_ . => -
+--() "ℕD./" => "`div`"
 
---() (ℕ.⊔) => max
---() (ℚ.⊓) => min
+-- this can be omitted:
+--() "pos" => ""
+
+--() "/" => "%"
+
+--() "(ℕ.⊔)" => "max"
+--() "(ℚ.⊓)" => "min"

@@ -1,0 +1,8 @@
+base: Base
+imports:
+  - Numeric.Natural
+  - Data.Ratio
+  - Prelude hiding (seq)
+modules:
+  - ErasureProduct
+  - Real
