@@ -1,7 +1,7 @@
 -- A collection of extra properties about naturals, integers, and rationals
 -- that were useful in constructing the rest of the library.
 
-{-# OPTIONS --without-K --safe #-}
+-- {-# OPTIONS --without-K --safe #-}        commented out for agda2hs
 
 open import Algebra
 open import Data.Bool.Base using (Bool; if_then_else_)
@@ -11,9 +11,9 @@ import Data.Integer.Properties as ℤP
 open import Data.Integer.DivMod as ℤD
 open import Data.Nat as ℕ using (ℕ; zero; suc)
 open import Data.Nat.Properties as ℕP using (≤-step)
+open import Data.Product
 import Data.Nat.DivMod as ℕD
 open import Level using (0ℓ)
-open import Data.Product
 open import Relation.Nullary
 open import Relation.Nullary.Negation using (contraposition)
 open import Relation.Nullary.Decidable
@@ -58,10 +58,10 @@ p≤∣p∣ : ∀ p -> p ℚ.≤ ℚ.∣ p ∣
 p≤∣p∣ (mkℚᵘ (+_ n) denominator-2) = ℚP.≤-refl
 p≤∣p∣ (mkℚᵘ (-[1+_] n) denominator-2) = ℚ.*≤* ℤ.-≤+
 
-archimedean-ℚ : ∀ p r -> @0 ℚ.Positive p -> ∃0 λ (N : ℕ) -> r ℚ.< ((+ N) ℤ.* ↥ p) / (↧ₙ p)
+archimedean-ℚ : ∀ p r -> @0 ℚ.Positive p -> Σ0 ℕ λ (N : ℕ) -> r ℚ.< ((+ N) ℤ.* ↥ p) / (↧ₙ p)
 archimedean-ℚ (mkℚᵘ +[1+ g ] q-1) (mkℚᵘ u v-1) posp = let p = suc g; q = suc q-1; v = suc v-1
                                                             ; r = (u ℤ.* + q) modℕ (p ℕ.* v); t = (u ℤ.* + q) divℕ (p ℕ.* v) in
-                                                      suc ℤ.∣ t ∣ , ℚ.*<* (begin-strict
+                                                      suc ℤ.∣ t ∣ :&: ℚ.*<* (begin-strict
   u ℤ.* + q                           ≡⟨ a≡a%ℕn+[a/ℕn]*n (u ℤ.* + q) (p ℕ.* v) ⟩
   + r ℤ.+ t ℤ.* (+ p ℤ.* + v)         <⟨ ℤP.+-monoˡ-< (t ℤ.* (+ p ℤ.* + v)) (ℤ.+<+ (n%d<d (u ℤ.* + q) (+ p ℤ.* + v))) ⟩
   + p ℤ.* + v ℤ.+ t ℤ.* (+ p ℤ.* + v) ≡⟨ solve 3 (λ p v t ->
@@ -76,7 +76,7 @@ archimedean-ℚ (mkℚᵘ +[1+ g ] q-1) (mkℚᵘ u v-1) posp = let p = suc g; q
     open ℤ-Solver
 
 abstract
-  fast-archimedean-ℚ : ∀ p r -> @0 ℚ.Positive p -> ∃0 λ (N : ℕ) -> r ℚ.< ((+ N) ℤ.* ↥ p) / (↧ₙ p)
+  fast-archimedean-ℚ : ∀ p r -> @0 ℚ.Positive p -> Σ0 ℕ λ (N : ℕ) -> r ℚ.< ((+ N) ℤ.* ↥ p) / (↧ₙ p)
   fast-archimedean-ℚ = archimedean-ℚ
 
 q≤r⇒+p/r≤+p/q : ∀ p q r -> {q≢0 : q ≢0} -> {r≢0 : r ≢0} -> q ℕ.≤ r -> (+ p / r) {r≢0} ℚ.≤ (+ p / q) {q≢0}
@@ -92,8 +92,8 @@ p≤q⇒p/r≤q/r p q (suc k₁) p≤q = ℚ.*≤* (ℤP.*-monoʳ-≤-nonNeg (su
 p<q⇒p/r<q/r : (p q : ℤ) (r : ℕ) {r≢0 : r ≢0} → p ℤ.< q → (p / r) {r≢0} ℚ.< (q / r) {r≢0}
 p<q⇒p/r<q/r p q (suc r-1) p<q = ℚ.*<* (ℤP.*-monoʳ-<-pos r-1 p<q)
 
-archimedean-ℚ₂ : ∀ (p : ℚᵘ) -> ∀ (r : ℤ) -> @0 ℚ.Positive p -> ∃0 λ (N-1 : ℕ) -> r / (suc N-1) ℚ.< p
-archimedean-ℚ₂ (mkℚᵘ (+_ p) q-1) r posp/q = let q = suc q-1; N-1 = proj₁ (fast-archimedean-ℚ (+ p / q) (r / 1) posp/q); N = suc N-1 in N-1 , (begin-strict
+archimedean-ℚ₂ : ∀ (p : ℚᵘ) -> ∀ (r : ℤ) -> @0 ℚ.Positive p -> Σ0 ℕ λ (N-1 : ℕ) -> r / (suc N-1) ℚ.< p
+archimedean-ℚ₂ (mkℚᵘ (+_ p) q-1) r posp/q = let q = suc q-1; N-1 = proj₁ (fast-archimedean-ℚ (+ p / q) (r / 1) posp/q); N = suc N-1 in N-1 :&: (begin-strict
   r / N                             ≈⟨ ℚ.*≡* (sym (ℤP.*-assoc r (+ 1) (+ N))) ⟩
   r / 1 ℚ.* (+ 1 / N)               <⟨ ℚP.*-monoˡ-<-pos _ (proj₂ (fast-archimedean-ℚ (+ p / q) (r / 1) posp/q)) ⟩
   (+ N-1 ℤ.* + p) / q ℚ.* (+ 1 / N) ≤⟨ ℚP.*-monoˡ-≤-nonNeg _ (p≤q⇒p/r≤q/r (+ N-1 ℤ.* + p) (+ N ℤ.* + p) q (ℤP.*-monoʳ-≤-nonNeg p (ℤ.+≤+ (ℕP.n≤1+n N-1)))) ⟩
@@ -105,7 +105,7 @@ archimedean-ℚ₂ (mkℚᵘ (+_ p) q-1) r posp/q = let q = suc q-1; N-1 = proj�
     open ℤ-Solver
 
 abstract
-  fast-archimedean-ℚ₂ : ∀ (p : ℚᵘ) -> ∀ (r : ℤ) -> @0 ℚ.Positive p -> ∃0 λ (N-1 : ℕ) -> r / (suc N-1) ℚ.< p
+  fast-archimedean-ℚ₂ : ∀ (p : ℚᵘ) -> ∀ (r : ℤ) -> @0 ℚ.Positive p -> Σ0 ℕ λ (N-1 : ℕ) -> r / (suc N-1) ℚ.< p
   fast-archimedean-ℚ₂ = archimedean-ℚ₂
 
 p<q⇒0<q-p : ∀ p q -> p ℚ.< q -> 0ℚᵘ ℚ.< q ℚ.- p
@@ -140,9 +140,9 @@ p<q⇒0<q-p p q p<q = begin-strict
                                   (solve 2 (λ p q -> ⊝ (q ⊖ p) ⊜ (p ⊖ q)) ℚP.≃-refl p q)) ⟩
       ℚ.∣ p ℚ.- q ∣  ∎
 
-least-ℤ>ℚ : ∀ (p : ℚᵘ) -> ∃ λ (K : ℤ) ->
+least-ℤ>ℚ : ∀ (p : ℚᵘ) -> Σ0 ℤ λ (K : ℤ) ->
             p ℚ.< K / 1 × ∀ (n : ℤ) -> p ℚ.< n / 1 -> K ℤ.≤ n
-least-ℤ>ℚ p/q = let p = ↥ p/q; q = ↧ₙ p/q; r = p modℕ q; t = p divℕ q in + 1 ℤ.+ t , greater , least
+least-ℤ>ℚ p/q = let p = ↥ p/q; q = ↧ₙ p/q; r = p modℕ q; t = p divℕ q in + 1 ℤ.+ t :&: greater , least
   where
     open ℤP.≤-Reasoning
     open ℤ-Solver
