@@ -43,6 +43,7 @@ open import Agda.Builtin.Unit
 open import ErasureProduct
 open import ExtraProperties
 
+-- In Haskell we use Rational, which is a normalised type.
 open ℚᵘ public
 
 record ℝ : Set where
@@ -431,7 +432,6 @@ pow x (suc n) = pow x n * x
   pow :: ℝ -> Natural -> ℝ
   pow x n = go x n oneℝ
     where
-      -- what about normalising ℚᵘ-s? there are pretty large denominators here
       go :: ℝ -> Natural -> ℝ -> ℝ
       go base 0 res = res
       go base exp res = go (base * base) (exp ℕD./ 2) (if (even exp) then res else res * base)
