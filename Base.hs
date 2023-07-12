@@ -6,6 +6,8 @@ import Data.Ratio
 -- here we are going to use the real denominator, not denominator-1
 type ℚᵘ = Rational
 
+-- this will be prettier if the problem with denominatorℕ in Agda gets solved
+--() "(suc . \ r -> denominator-1 r)" => "denominatorℕ"
 denominatorℕ :: Rational -> Natural
 denominatorℕ = fromInteger . denominator
 

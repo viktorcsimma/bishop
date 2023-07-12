@@ -37,6 +37,7 @@ open import Data.List hiding (sum)
 -- we have to import this for the Num type class
 -- but with lots of hidings
 open import Haskell.Prim.Num -- hiding (seq; step-≡; _∎; cong; _×_; _×_×_; sym; begin_; _,_; m; max; Negative; _<_; _>_; sum) --is --cubical-compatible and not --without-K
+open import Haskell.Prim using (_∘_)
 
 open import Agda.Builtin.Unit
 open import ErasureProduct
@@ -56,10 +57,9 @@ record ℝ : Set where
 
 open ℝ public
 
+-- I took out those that are in the Num type class and those that got renamed.
 infix 4 _≃_
-infixl 6 _+_ _-_ _⊔_ _⊓_ _⊓₂_
-infixl 7 _*_
-infix 8 -_ _⋆
+infixl 6 _⊔_ _⊓_ _⊓₂_
 
 data _≃_ : Rel ℝ Level.zero where
   *≃* : {x y : ℝ} → @0 ((n : ℕ) {n≢0 : n ≢0} →
@@ -73,8 +73,13 @@ data _≃_ : Rel ℝ Level.zero where
 
 -- f for function
 -- has to start with a lowercase letter; otherwise agda2hs won't accept it
+
+-- denominatorℕ and ↧ₙ simply didn't work in agda2hs; it was losing the parameters... I think that was a bug
+-- so we have to circumvent this
+-- I think the problem is that they are functions within the record definition, but not destructors
+-- what about suc ∘ denominator-1?
 fK : ℝ -> ℕ
-fK x = let p = ↥ (ℚ.∣ seq x 1 ∣ ℚ.+ (+ 2 / 1)); q = ↧ₙ (ℚ.∣ seq x 1 ∣ ℚ.+ (+ 2 / 1)) in suc ℤ.∣ p divℕ q ∣
+fK x = let p = ↥ (ℚ.∣ seq x 1 ∣ ℚ.+ (+ 2 / 1)); q = (suc ∘ denominator-1) (ℚ.∣ seq x 1 ∣ ℚ.+ (+ 2 / 1)) in suc ℤ.∣ p divℕ q ∣
 {-# COMPILE AGDA2HS fK #-}
 
 
