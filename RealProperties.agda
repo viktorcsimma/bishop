@@ -2,7 +2,7 @@
 -- Note that these properties are only for the operations defined in
 -- Real.agda. For definitions and properties regarding inverses, see Inverse.agda.
 
-{-# OPTIONS --without-K --safe #-}
+-- {-# OPTIONS --without-K --safe #-}
 
 module RealProperties where
 
@@ -23,7 +23,7 @@ open import Relation.Nullary.Decidable
 open import Relation.Unary using (Pred)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; _≢_; refl; cong; sym; subst; trans; ≢-sym)
 open import Relation.Binary
-open import Data.Rational.Unnormalised as ℚ using (ℚᵘ; mkℚᵘ; _≢0; _/_; 0ℚᵘ; 1ℚᵘ; ↥_; ↧_; ↧ₙ_)
+open import Data.Rational.Unnormalised as ℚ using (ℚᵘ; mkℚᵘ; _≢0; _/_; ↥_; ↧_; ↧ₙ_)
 import Data.Rational.Unnormalised.Properties as ℚP
 open import Algebra.Bundles
 open import Algebra.Structures
@@ -33,6 +33,10 @@ open import Data.Maybe.Base
 import NonReflectiveQ as ℚ-Solver
 import NonReflectiveZ as ℤ-Solver
 open import Data.List
+
+open import Agda.Builtin.Unit
+open import Haskell.Prim.Num
+open import Haskell.Prim.Either
 
 open import ErasureProduct
 open import ExtraProperties
@@ -51,17 +55,27 @@ testf (suc n) = suc n -- ...but this does
 -- See Agda issue #6430: https://github.com/agda/agda/issues/6430.
 -}
 
+-- Actually, for the proofs we can use an alias with the old operators.
+private
+  _⋆ : ℚᵘ → ℝ
+  _⋆ = toReal
+  -_ : ℝ → ℝ
+  - x = negate x                 -- Here it moans because of the proof argument of negate.
+  ∣_∣ : ℝ → ℝ
+  ∣_∣ = abs
+  infix 8 _⋆ -_
+
 -- Properties to show real equality is an equivalence relation
 
 ≃-refl : Reflexive _≃_
 ≃-refl {x} = *≃* λ { (suc k₁) → let n = suc k₁ in begin
   ℚ.∣ seq x n ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq x n)) ⟩
-  0ℚᵘ                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                    ∎}
   where open ℚP.≤-Reasoning
 
-≃-symm : Symmetric _≃_
-≃-symm {x} {y} (*≃* x₁) = *≃* lem
+≃-sym : Symmetric _≃_
+≃-sym {x} {y} (*≃* x₁) = *≃* lem
   where
     @0 lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq y n ℚ.- seq x n ∣ ℚ.≤ + 2 / n
     lem (suc k) = let n = suc k in begin
@@ -75,16 +89,16 @@ testf (suc n) = suc n -- ...but this does
 ≃-reflexive {x} {y} hyp = *≃* (λ {(suc n-1) -> let n = suc n-1 in begin
   ℚ.∣ seq x n ℚ.- seq y n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (seq x n) (ℚP.-‿cong (ℚP.≃-sym (hyp n)))) ⟩
   ℚ.∣ seq x n ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq x n)) ⟩
-  0ℚᵘ                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                    ∎})
   where open ℚP.≤-Reasoning
 
 -- The following equality lemma is Lemma 2.3 in Bishop & Bridges.
 -- It is used to prove that equality is transitive.
-equality-lemma-if : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
-                  ∃0 λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
+equalityLemmaIf : ∀ x y -> @0 (x ≃ y) -> ∀ (j : ℕ) -> {@0 j≢0 : j ≢0} ->
+                  Σ0 ℕ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
                   ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
-equality-lemma-if x y (*≃* x₁) (suc k₁) = (2 ℕ.* j , lem)
+equalityLemmaIf x y (*≃* x₁) (suc k₁) = (2 ℕ.* j :&: lem)
   where
     open ℚP.≤-Reasoning
     j : ℕ
@@ -95,13 +109,22 @@ equality-lemma-if x y (*≃* x₁) (suc k₁) = (2 ℕ.* j , lem)
         + 2 / n                   ≤⟨ ℚ.*≤* (ℤP.*-monoˡ-≤-nonNeg 2 (ℤ.+≤+ n≥N)) ⟩
         + 2 / N                   ≈⟨ ℚ.*≡* (sym (ℤP.*-identityˡ (+ 2 ℤ.* + j))) ⟩
         + 1 / j                     ∎
-    
+
+-- The compiled version does not pattern match on suc.
+equalityLemmaIf' : ∀ x y -> @0 (x ≃ y) -> ∀ (j : ℕ) -> {@0 j≢0 : j ≢0} ->
+                  Σ0 ℕ λ (N : ℕ) -> ⊤
+equalityLemmaIf' _ _ (*≃* _) j = (2 ℕ.* j :&: tt)
+{-# COMPILE AGDA2HS equalityLemmaIf' #-}
+
+@0 proj₁equalityLemmaIf≡proj₁equalityLemmaIf' : ∀ x y -> (@0 x≃y : x ≃ y) -> ∀ (j : ℕ) -> {@0 j≢0 : j ≢0} ->
+                                         proj₁ (equalityLemmaIf x y x≃y j {j≢0}) ≡ proj₁ (equalityLemmaIf' x y x≃y j {j≢0})
+proj₁equalityLemmaIf≡proj₁equalityLemmaIf' _ _ (*≃* _) (suc k₁) = refl
 
 abstract
-  fast-equality-lemma-if : ∀ x y -> x ≃ y -> ∀ (j : ℕ) -> {j≢0 : j ≢0} ->
-                           ∃0 λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
+  fastEqualityLemmaIf : ∀ x y -> @0 (x ≃ y) -> ∀ (j : ℕ) -> {@0 j≢0 : j ≢0} ->
+                           Σ0 ℕ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
                            ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / j) {j≢0}
-  fast-equality-lemma-if = equality-lemma-if
+  fastEqualityLemmaIf = equalityLemmaIf
 
 equality-lemma-onlyif : ∀ x y ->
                         @0 (∀ (j : ℕ) -> {j≢0 : j ≢0} -> ∃ λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
@@ -158,7 +181,7 @@ equality-lemma-onlyif x y hyp1 = *≃* (λ n {n≢0} -> lem n {n≢0} (∣xₙ-y
           ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 2 / n) {n≢0} ℚ.+ (+ 3 / j) {j≢0}) ->
           ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 2 / n) {n≢0}
     lem (suc k₂) hyp2 = let n = suc k₂ in
-                          ℚP.≮⇒≥ (λ hyp3 -> let arch = fast-archimedean-ℚ₂ (ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.- + 2 / n) (+ 3)
+                          ℚP.≮⇒≥ (λ hyp3 -> let arch = fastArchimedeanℚ₂ (ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.- + 2 / n) (+ 3)
                                                         (ℚ.positive (p<q⇒0<q-p (+ 2 / n) ℚ.∣ seq x n ℚ.- seq y n ∣ hyp3))
                                                         ; j = suc (proj₁ arch)
                                                         ; Nⱼ = suc (proj₁ (hyp1 j))
@@ -189,12 +212,12 @@ equality-lemma-onlyif x y hyp1 = *≃* (λ n {n≢0} -> lem n {n≢0} (∣xₙ-y
     lem (suc k₁) = N , lem₂
       where
         j = suc k₁
-        eqxy = fast-equality-lemma-if x y x≃y
-        eqyz = fast-equality-lemma-if y z y≃z
+        eqxy = fastEqualityLemmaIf x y x≃y
+        eqyz = fastEqualityLemmaIf y z y≃z
         N₁ = proj₁ (eqxy (2 ℕ.* j)); N₂ = proj₁ (eqyz (2 ℕ.* j))
         N = suc (N₁ ℕ.⊔ N₂)
         
-        lem₂ : (n : ℕ) → n ℕ.≥ suc (proj₁ (fast-equality-lemma-if x y x≃y (suc (k₁ ℕ.+ suc (k₁ ℕ.+ zero)))) ℕ.⊔ proj₁ (fast-equality-lemma-if y z y≃z (suc (k₁ ℕ.+ suc (k₁ ℕ.+ zero))))) →
+        lem₂ : (n : ℕ) → n ℕ.≥ suc (proj₁ (fastEqualityLemmaIf x y x≃y (suc (k₁ ℕ.+ suc (k₁ ℕ.+ zero)))) ℕ.⊔ proj₁ (fastEqualityLemmaIf y z y≃z (suc (k₁ ℕ.+ suc (k₁ ℕ.+ zero))))) →
              ℚ.∣ seq x n ℚ.- seq z n ∣ ℚ.≤ mkℚᵘ (+ 1) k₁
         lem₂ (suc k₂) n≥N = let n = suc k₂ ; N₁⊔N₂≤n = ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred N)) n≥N in begin
                   ℚ.∣ seq x n ℚ.- seq z n ∣                               ≈⟨ ℚP.∣-∣-cong (solve 3 (λ xₙ yₙ zₙ ->
@@ -215,7 +238,7 @@ equality-lemma-onlyif x y hyp1 = *≃* (λ n {n≢0} -> lem n {n≢0} (∣xₙ-y
 ≃-isEquivalence : IsEquivalence _≃_
 ≃-isEquivalence = record
   { refl = ≃-refl
-  ; sym = ≃-symm
+  ; sym = ≃-sym
   ; trans = ≃-trans
   }
 
@@ -273,7 +296,7 @@ equals-to-cauchy x y x≃y (suc k₁) = N , lem
 
     j N₁ N₂ N : ℕ
     j = suc k₁
-    N₁ = suc (proj₁ (fast-equality-lemma-if x y x≃y (2 ℕ.* j)))
+    N₁ = suc (proj₁ (fastEqualityLemmaIf x y x≃y (2 ℕ.* j)))
     N₂ = proj₁ (regular⇒cauchy x (2 ℕ.* j))
     N = N₁ ℕ.⊔ N₂
     lem : (m n : ℕ) → m ℕ.≥ N → n ℕ.≥ N → ℚ.∣ seq x m ℚ.- seq y n ∣ ℚ.≤ mkℚᵘ (+ 1) k₁
@@ -287,7 +310,7 @@ equals-to-cauchy x y x≃y (suc k₁) = N , lem
           ℚ.∣ seq x m ℚ.- seq x n ∣ ℚ.+
           ℚ.∣ seq x n ℚ.- seq y n ∣     ≤⟨ ℚP.+-mono-≤
                                            (proj₂ (regular⇒cauchy x (2 ℕ.* j)) m n (ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) m≥N) (ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) n≥N))
-                                           (proj₂ (fast-equality-lemma-if x y x≃y (2 ℕ.* j)) n (ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred N₁)) (ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) n≥N))) ⟩
+                                           (proj₂ (fastEqualityLemmaIf x y x≃y (2 ℕ.* j)) n (ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred N₁)) (ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) n≥N))) ⟩
           (+ 1 / (2 ℕ.* j)) ℚ.+
           (+ 1 / (2 ℕ.* j))             ≈⟨ ℚ.*≡* (ℤsolve 1 (λ j ->
                                            (κ (+ 1) :* (κ (+ 2) :* j) :+ (κ (+ 1) :* (κ (+ 2) :* j))) :* j :=
@@ -341,9 +364,9 @@ abstract
 +-comm x y = *≃* (λ @0 { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ (seq x (2 ℕ.* n) ℚ.+ seq y (2 ℕ.* n)) ℚ.-
       (seq y (2 ℕ.* n) ℚ.+ seq x (2 ℕ.* n)) ∣   ≈⟨ ℚP.∣-∣-cong (solve 2 (λ x y ->
-                                                   (x ⊕ y) ⊖ (y ⊕ x) ⊜ Κ 0ℚᵘ)
+                                                   (x ⊕ y) ⊖ (y ⊕ x) ⊜ Κ (+ 0 / 1))
                                                    ℚP.≃-refl (seq x (2 ℕ.* n)) (seq y (2 ℕ.* n))) ⟩
-  0ℚᵘ                                           ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                                           ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   (+ 2) / n                                      ∎})
   where
     open ℚP.≤-Reasoning
@@ -392,15 +415,15 @@ abstract
                                                                                        refl (+ n)) ⟩
              + 2 / n                                                      ∎
 
-+-identityˡ : LeftIdentity _≃_ 0ℝ _+_
++-identityˡ : LeftIdentity _≃_ zeroℝ _+_
 +-identityˡ x = *≃* (lem)
   where
     open ℚP.≤-Reasoning
     open ℤ-Solver
 
-    @0 lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq (0ℝ + x) n ℚ.- seq x n ∣ ℚ.≤ + 2 / n
+    @0 lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq (zeroℝ + x) n ℚ.- seq x n ∣ ℚ.≤ + 2 / n
     lem (suc k₁) = let n = suc k₁ in begin
-           ℚ.∣ (0ℚᵘ ℚ.+ seq x (2 ℕ.* n)) ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- seq x n) (ℚP.+-identityˡ (seq x (2 ℕ.* n)))) ⟩
+           ℚ.∣ ((+ 0 / 1) ℚ.+ seq x (2 ℕ.* n)) ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- seq x n) (ℚP.+-identityˡ (seq x (2 ℕ.* n)))) ⟩
            ℚ.∣ seq x (2 ℕ.* n) ℚ.- seq x n ∣           ≤⟨ reg x (2 ℕ.* n) n ⟩
            (+ 1 / (2 ℕ.* n)) ℚ.+ (+ 1 / n)             ≈⟨ ℚ.*≡* (solve 1 (λ n ->
                                                           (Κ (+ 1) ⊗ n ⊕ Κ (+ 1) ⊗ (Κ (+ 2) ⊗ n)) ⊗ (Κ (+ 2) ⊗ n) ⊜
@@ -412,59 +435,59 @@ abstract
                                                           refl (+ n)) ⟩
            + 2 / n                                      ∎
 
-+-identityʳ : RightIdentity _≃_ 0ℝ _+_
-+-identityʳ x = ≃-trans (+-comm x 0ℝ) (+-identityˡ x)
++-identityʳ : RightIdentity _≃_ zeroℝ _+_
++-identityʳ x = ≃-trans (+-comm x zeroℝ) (+-identityˡ x)
 
-+-identity : Identity _≃_ 0ℝ _+_
++-identity : Identity _≃_ zeroℝ _+_
 +-identity = +-identityˡ , +-identityʳ
 
-+-inverseʳ : RightInverse _≃_ 0ℝ -_ _+_
++-inverseʳ : RightInverse _≃_ zeroℝ -_ _+_
 +-inverseʳ x = *≃* (λ @0 { (suc k₁) -> let n = suc k₁ in begin
-  ℚ.∣ (seq x (2 ℕ.* n) ℚ.- seq x (2 ℕ.* n)) ℚ.+ 0ℚᵘ ∣ ≈⟨ ℚP.∣-∣-cong (solve 1 (λ x -> x ⊖ x ⊕ Κ 0ℚᵘ ⊜ Κ 0ℚᵘ)
+  ℚ.∣ (seq x (2 ℕ.* n) ℚ.- seq x (2 ℕ.* n)) ℚ.+ (+ 0 / 1) ∣ ≈⟨ ℚP.∣-∣-cong (solve 1 (λ x -> x ⊖ x ⊕ Κ (+ 0 / 1) ⊜ Κ (+ 0 / 1))
                                                          ℚP.≃-refl (seq x (2 ℕ.* n))) ⟩
-  0ℚᵘ                                                 ≤⟨ ℚ.*≤* (ℤP.≤-trans (ℤP.≤-reflexive (ℤP.*-zeroˡ (+ n))) (ℤ.+≤+ ℕ.z≤n)) ⟩
+  (+ 0 / 1)                                                 ≤⟨ ℚ.*≤* (ℤP.≤-trans (ℤP.≤-reflexive (ℤP.*-zeroˡ (+ n))) (ℤ.+≤+ ℕ.z≤n)) ⟩
   + 2 / n                                              ∎})
   where
     open ℚP.≤-Reasoning
     open ℚ-Solver
 
-+-inverseˡ : LeftInverse _≃_ 0ℝ -_ _+_
++-inverseˡ : LeftInverse _≃_ zeroℝ -_ _+_
 +-inverseˡ x = ≃-trans (+-comm (- x) x) (+-inverseʳ x)
 
-+-inverse : Inverse _≃_ 0ℝ -_ _+_
++-inverse : Inverse _≃_ zeroℝ -_ _+_
 +-inverse = +-inverseˡ , +-inverseʳ
 
--- Properties of _⋆
+-- Properties of toReal
 
 ⋆-cong : ∀ {p} {q} -> p ℚ.≃ q -> p ⋆ ≃ q ⋆
 ⋆-cong {p} {q} p≃q = *≃* (λ @0 {(suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ p ℚ.- q ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.p≃q⇒p-q≃0 p q p≃q) ⟩
-  0ℚᵘ           ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)           ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n        ∎})
   where open ℚP.≤-Reasoning
 
 ⋆-distrib-+ : ∀ (p r : ℚᵘ) -> (p ℚ.+ r) ⋆ ≃ p ⋆ + r ⋆
 ⋆-distrib-+ x y = *≃* (λ @0 { (suc k₁) -> let n = suc k₁; p = ↥ x; q = ↧ₙ x; u = ↥ y; v = ↧ₙ y in begin
   ℚ.∣ ((p / q) ℚ.+ (u / v)) ℚ.- ((p / q) ℚ.+ (u / v)) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ ((p / q) ℚ.+ (u / v))) ⟩
-  0ℚᵘ                                                   ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                                                   ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   (+ 2) / n                                              ∎})
   where open ℚP.≤-Reasoning
 
 ⋆-distrib-* : ∀ p q -> (p ℚ.* q) ⋆ ≃ p ⋆ * q ⋆
 ⋆-distrib-* p q = *≃* (λ @0 {(suc n-1) -> let n = suc n-1 in begin
   ℚ.∣ p ℚ.* q ℚ.- p ℚ.* q ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (p ℚ.* q)) ⟩
-  0ℚᵘ                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                       ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                    ∎})
   where open ℚP.≤-Reasoning
 
-⋆-distrib-neg : ∀ (p : ℚᵘ) -> (ℚ.- p) ⋆ ≃ - (p ⋆)
+⋆-distrib-neg : ∀ (p : ℚᵘ) -> ((ℚ.- p) ⋆) ≃ negate (p ⋆)
 ⋆-distrib-neg p = *≃* λ @0 { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ ℚ.- p ℚ.- (ℚ.- p) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (ℚ.- p)) ⟩
-  0ℚᵘ                     ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                     ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   (+ 2) / n                ∎}
   where open ℚP.≤-Reasoning
 
-@0 ∣p∣⋆≃∣p⋆∣ : ∀ p -> ℚ.∣ p ∣ ⋆ ≃ ∣ p ⋆ ∣
+@0 ∣p∣⋆≃∣p⋆∣ : ∀ p -> (ℚ.∣ p ∣ ⋆) ≃ abs (p ⋆)
 ∣p∣⋆≃∣p⋆∣ p = ≃-reflexive (λ {n -> ℚP.≃-refl})
 
 -- Properties of _*_
@@ -488,10 +511,10 @@ abstract
     partA (suc k₁) = N , partB
       where
         j = suc k₁
-        r = K x ℕ.⊔ K y
-        t = K z ℕ.⊔ K w
-        N₁ = proj₁ (fast-equals-to-cauchy x z x≃z (K y ℕ.* (2 ℕ.* j)))
-        N₂ = proj₁ (fast-equals-to-cauchy y w y≃w (K z ℕ.* (2 ℕ.* j)))
+        r = fK x ℕ.⊔ fK y
+        t = fK z ℕ.⊔ fK w
+        N₁ = proj₁ (fast-equals-to-cauchy x z x≃z (fK y ℕ.* (2 ℕ.* j)))
+        N₂ = proj₁ (fast-equals-to-cauchy y w y≃w (fK z ℕ.* (2 ℕ.* j)))
         N = suc (N₁ ℕ.⊔ N₂)
 
         partB : ∀ (n : ℕ) -> n ℕ.≥ N -> ℚ.∣ seq (x * y) n ℚ.- seq (z * w) n ∣ ℚ.≤ (+ 1 / j)
@@ -513,26 +536,26 @@ abstract
           ℚ.∣ z₂ₜₙ ∣ ℚ.* ℚ.∣ y₂ᵣₙ ℚ.- w₂ₜₙ ∣               ≤⟨ ℚP.+-mono-≤ (ℚP.≤-trans
                                                                           (ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ x₂ᵣₙ ℚ.- z₂ₜₙ ∣} _
                                                                                                (ℚP.<⇒≤ (canonical-strict-upper-bound y (2 ℕ.* r ℕ.* n))))
-                                                                          (ℚP.*-monoʳ-≤-nonNeg {+ K y / 1} _
-                                                                                               (proj₂ (fast-equals-to-cauchy x z x≃z (K y ℕ.* (2 ℕ.* j)))
+                                                                          (ℚP.*-monoʳ-≤-nonNeg {+ fK y / 1} _
+                                                                                               (proj₂ (fast-equals-to-cauchy x z x≃z (fK y ℕ.* (2 ℕ.* j)))
                                                                                                       (2 ℕ.* r ℕ.* n) (2 ℕ.* t ℕ.* n)
                                                                                                       (N₁≤ (2 ℕ.* r ℕ.* n) (N≤2kn r))
                                                                                                       (N₁≤ (2 ℕ.* t ℕ.* n) (N≤2kn t)))))
                                                                           (ℚP.≤-trans
                                                                           (ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ y₂ᵣₙ ℚ.- w₂ₜₙ ∣} _
                                                                                                (ℚP.<⇒≤ (canonical-strict-upper-bound z (2 ℕ.* t ℕ.* n))))
-                                                                          (ℚP.*-monoʳ-≤-nonNeg {+ K z / 1} _
-                                                                                               (proj₂ (fast-equals-to-cauchy y w y≃w (K z ℕ.* (2 ℕ.* j)))
+                                                                          (ℚP.*-monoʳ-≤-nonNeg {+ fK z / 1} _
+                                                                                               (proj₂ (fast-equals-to-cauchy y w y≃w (fK z ℕ.* (2 ℕ.* j)))
                                                                                                (2 ℕ.* r ℕ.* n) (2 ℕ.* t ℕ.* n)
                                                                                                (N₂≤ (2 ℕ.* r ℕ.* n) (N≤2kn r))
                                                                                                (N₂≤ (2 ℕ.* t ℕ.* n) (N≤2kn t))))) ⟩
-          (+ K y / 1) ℚ.* (+ 1 / (K y ℕ.* (2 ℕ.* j))) ℚ.+
-          (+ K z / 1) ℚ.* (+ 1 / (K z ℕ.* (2 ℕ.* j)))     ≈⟨ ℚ.*≡* (ℤsolve 3 (λ Ky Kz j ->
+          (+ fK y / 1) ℚ.* (+ 1 / (fK y ℕ.* (2 ℕ.* j))) ℚ.+
+          (+ fK z / 1) ℚ.* (+ 1 / (fK z ℕ.* (2 ℕ.* j)))     ≈⟨ ℚ.*≡* (ℤsolve 3 (λ Ky Kz j ->
 
           -- Function for solver
           ((Ky :* κ (+ 1)) :* (κ (+ 1) :* (Kz :* (κ (+ 2) :* j))) :+ (Kz :* κ (+ 1) :* (κ (+ 1) :* (Ky :* (κ (+ 2) :* j))))) :* j :=
           κ (+ 1) :* ((κ (+ 1) :* (Ky :* (κ (+ 2) :* j))) :* (κ (+ 1) :* (Kz :* (κ (+ 2) :* j)))))
-          refl (+ K y) (+ K z) (+ j)) ⟩
+          refl (+ fK y) (+ fK z) (+ j)) ⟩
           
           + 1 / j                                          ∎
           where
@@ -557,22 +580,22 @@ abstract
     open ℚP.≤-Reasoning
     @0 xyℚ≃yxℚ : ∀ (n : ℕ) -> seq (x * y) n ℚ.≃ seq (y * x) n
     xyℚ≃yxℚ n = begin-equality
-      seq x (2 ℕ.* (K x ℕ.⊔ K y) ℕ.* n) ℚ.*
-      seq y (2 ℕ.* (K x ℕ.⊔ K y) ℕ.* n)     ≡⟨ cong (λ r ->
+      seq x (2 ℕ.* (fK x ℕ.⊔ fK y) ℕ.* n) ℚ.*
+      seq y (2 ℕ.* (fK x ℕ.⊔ fK y) ℕ.* n)     ≡⟨ cong (λ r ->
                                                seq x (2 ℕ.* r ℕ.* n) ℚ.* seq y (2 ℕ.* r ℕ.* n))
-                                               (ℕP.⊔-comm (K x) (K y)) ⟩
-      seq x (2 ℕ.* (K y ℕ.⊔ K x) ℕ.* n) ℚ.*
-      seq y (2 ℕ.* (K y ℕ.⊔ K x) ℕ.* n)     ≈⟨ ℚP.*-comm (seq x (2 ℕ.* (K y ℕ.⊔ K x) ℕ.* n))
-                                                         (seq y (2 ℕ.* (K y ℕ.⊔ K x) ℕ.* n)) ⟩
-      seq y (2 ℕ.* (K y ℕ.⊔ K x) ℕ.* n) ℚ.*
-      seq x (2 ℕ.* (K y ℕ.⊔ K x) ℕ.* n)      ∎
+                                               (ℕP.⊔-comm (fK x) (fK y)) ⟩
+      seq x (2 ℕ.* (fK y ℕ.⊔ fK x) ℕ.* n) ℚ.*
+      seq y (2 ℕ.* (fK y ℕ.⊔ fK x) ℕ.* n)     ≈⟨ ℚP.*-comm (seq x (2 ℕ.* (fK y ℕ.⊔ fK x) ℕ.* n))
+                                                         (seq y (2 ℕ.* (fK y ℕ.⊔ fK x) ℕ.* n)) ⟩
+      seq y (2 ℕ.* (fK y ℕ.⊔ fK x) ℕ.* n) ℚ.*
+      seq x (2 ℕ.* (fK y ℕ.⊔ fK x) ℕ.* n)      ∎
 
     @0 lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq (x * y) n ℚ.- seq (y * x) n ∣ ℚ.≤ + 2 / n
     lem (suc k₁) = let n = suc k₁ in begin
            ℚ.∣ seq (x * y) n ℚ.- seq (y * x) n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (seq (x * y) n)
                                                                (ℚP.-‿cong (ℚP.≃-sym (xyℚ≃yxℚ n)))) ⟩
            ℚ.∣ seq (x * y) n ℚ.- seq (x * y) n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq (x * y) n)) ⟩
-           0ℚᵘ                                   ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+           (+ 0 / 1)                                   ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
            + 2 / n                                ∎
 
 *-assoc : Associative _≃_ _*_
@@ -593,9 +616,9 @@ abstract
     lemA (suc k₁) = N , lemB
       where
         j = suc k₁
-        N₁ = proj₁ (fast-regular⇒cauchy x (K y ℕ.* K z ℕ.* (3 ℕ.* j)))
-        N₂ = proj₁ (fast-regular⇒cauchy y (K x ℕ.* K z ℕ.* (3 ℕ.* j)))
-        N₃ = proj₁ (fast-regular⇒cauchy z (K x ℕ.* K y ℕ.* (3 ℕ.* j)))
+        N₁ = proj₁ (fast-regular⇒cauchy x (fK y ℕ.* fK z ℕ.* (3 ℕ.* j)))
+        N₂ = proj₁ (fast-regular⇒cauchy y (fK x ℕ.* fK z ℕ.* (3 ℕ.* j)))
+        N₃ = proj₁ (fast-regular⇒cauchy z (fK x ℕ.* fK y ℕ.* (3 ℕ.* j)))
         N = suc (N₁ ℕ.⊔ N₂ ℕ.⊔ N₃)
 
         lemB : ∀ (n : ℕ) -> n ℕ.≥ N -> ℚ.∣ seq (x * y * z) n ℚ.- seq (x * (y * z)) n ∣ ℚ.≤ + 1 / j
@@ -641,10 +664,10 @@ abstract
           + 1 / j                                                        ∎
           where
             n = suc k₂
-            r = K x ℕ.⊔ K y
-            s = K (x * y) ℕ.⊔ K z
-            u = K x ℕ.⊔ K (y * z)
-            t = K y ℕ.⊔ K z
+            r = fK x ℕ.⊔ fK y
+            s = fK (x * y) ℕ.⊔ fK z
+            u = fK x ℕ.⊔ fK (y * z)
+            t = fK y ℕ.⊔ fK z
 
             x₄ᵣₛₙ = seq x (2 ℕ.* r ℕ.* (2 ℕ.* s ℕ.* n))
             y₄ᵣₛₙ = seq y (2 ℕ.* r ℕ.* (2 ℕ.* s ℕ.* n))
@@ -674,17 +697,17 @@ abstract
               ℚ.∣ y₄ᵣₛₙ ∣ ℚ.* ℚ.∣ z₂ₛₙ ∣ ℚ.* ℚ.∣ x₄ᵣₛₙ ℚ.- x₂ᵤₙ ∣            ≤⟨ ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ x₄ᵣₛₙ ℚ.- x₂ᵤₙ ∣} _ (ℚP.≤-trans
                                                                                (ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ z₂ₛₙ ∣} _ (ℚP.<⇒≤
                                                                                (canonical-strict-upper-bound y (2 ℕ.* r ℕ.* (2 ℕ.* s ℕ.* n)))))
-                                                                               (ℚP.*-monoʳ-≤-nonNeg {(+ K y) / 1} _ (ℚP.<⇒≤
+                                                                               (ℚP.*-monoʳ-≤-nonNeg {(+ fK y) / 1} _ (ℚP.<⇒≤
                                                                                (canonical-strict-upper-bound z (2 ℕ.* s ℕ.* n))))) ⟩
-              (+ (K y ℕ.* K z) / 1) ℚ.* ℚ.∣ x₄ᵣₛₙ ℚ.- x₂ᵤₙ ∣                ≤⟨ ℚP.*-monoʳ-≤-nonNeg {+ (K y ℕ.* K z) / 1} _
-                                                                               (proj₂ (fast-regular⇒cauchy x (K y ℕ.* K z ℕ.* (3 ℕ.* j)))
+              (+ (fK y ℕ.* fK z) / 1) ℚ.* ℚ.∣ x₄ᵣₛₙ ℚ.- x₂ᵤₙ ∣                ≤⟨ ℚP.*-monoʳ-≤-nonNeg {+ (fK y ℕ.* fK z) / 1} _
+                                                                               (proj₂ (fast-regular⇒cauchy x (fK y ℕ.* fK z ℕ.* (3 ℕ.* j)))
                                                                                (2 ℕ.* r ℕ.* (2 ℕ.* s ℕ.* n)) (2 ℕ.* u ℕ.* n)
                                                                                (N₁≤ (N≤4abn r s))
                                                                                (N₁≤ (N≤2an u))) ⟩
-              (+ (K y ℕ.* K z) / 1) ℚ.* (+ 1 / (K y ℕ.* K z ℕ.* (3 ℕ.* j))) ≈⟨ ℚ.*≡* (ℤsolve 3 (λ Ky Kz j ->
+              (+ (fK y ℕ.* fK z) / 1) ℚ.* (+ 1 / (fK y ℕ.* fK z ℕ.* (3 ℕ.* j))) ≈⟨ ℚ.*≡* (ℤsolve 3 (λ Ky Kz j ->
                                                                                ((Ky :* Kz) :* κ (+ 1)) :* (κ (+ 3) :* j) :=
                                                                                (κ (+ 1) :* (κ (+ 1) :* (Ky :* Kz :* (κ (+ 3) :* j)))))
-                                                                               refl (+ K y) (+ K z) (+ j)) ⟩
+                                                                               refl (+ fK y) (+ fK z) (+ j)) ⟩
               + 1 / (3 ℕ.* j)                                                ∎
 
             part2 : ℚ.∣ x₂ᵤₙ ∣ ℚ.* ℚ.∣ z₂ₛₙ ℚ.* (y₄ᵣₛₙ ℚ.- y₄ₜᵤₙ) ∣ ℚ.≤ + 1 / (3 ℕ.* j)
@@ -694,18 +717,18 @@ abstract
               ℚ.∣ x₂ᵤₙ ∣ ℚ.* ℚ.∣ z₂ₛₙ ∣ ℚ.* ℚ.∣ y₄ᵣₛₙ ℚ.- y₄ₜᵤₙ ∣ ≤⟨ ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ y₄ᵣₛₙ ℚ.- y₄ₜᵤₙ ∣} _ (ℚP.≤-trans
                                                                     (ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ z₂ₛₙ ∣} _
                                                                     (ℚP.<⇒≤ (canonical-strict-upper-bound x (2 ℕ.* u ℕ.* n))))
-                                                                    (ℚP.*-monoʳ-≤-nonNeg {+ K x / 1} _
+                                                                    (ℚP.*-monoʳ-≤-nonNeg {+ fK x / 1} _
                                                                     (ℚP.<⇒≤ (canonical-strict-upper-bound z (2 ℕ.* s ℕ.* n))))) ⟩
-              (+ (K x ℕ.* K z) / 1) ℚ.* ℚ.∣ y₄ᵣₛₙ ℚ.- y₄ₜᵤₙ ∣    ≤⟨ ℚP.*-monoʳ-≤-nonNeg {+ (K x ℕ.* K z) / 1} _
-                                                                    (proj₂ (fast-regular⇒cauchy y (K x ℕ.* K z ℕ.* (3 ℕ.* j)))
+              (+ (fK x ℕ.* fK z) / 1) ℚ.* ℚ.∣ y₄ᵣₛₙ ℚ.- y₄ₜᵤₙ ∣    ≤⟨ ℚP.*-monoʳ-≤-nonNeg {+ (fK x ℕ.* fK z) / 1} _
+                                                                    (proj₂ (fast-regular⇒cauchy y (fK x ℕ.* fK z ℕ.* (3 ℕ.* j)))
                                                                     (2 ℕ.* r ℕ.* (2 ℕ.* s ℕ.* n)) (2 ℕ.* t ℕ.* (2 ℕ.* u ℕ.* n))
                                                                     (N₂≤ (N≤4abn r s))
                                                                     (N₂≤ (N≤4abn t u))) ⟩
-              (+ (K x ℕ.* K z) / 1) ℚ.*
-              (+ 1 / (K x ℕ.* K z ℕ.* (3 ℕ.* j)))                ≈⟨ ℚ.*≡* (ℤsolve 3 (λ Kx Kz j ->
+              (+ (fK x ℕ.* fK z) / 1) ℚ.*
+              (+ 1 / (fK x ℕ.* fK z ℕ.* (3 ℕ.* j)))                ≈⟨ ℚ.*≡* (ℤsolve 3 (λ Kx Kz j ->
                                                                     (Kx :* Kz :* κ (+ 1)) :* (κ (+ 3) :* j) :=
                                                                     (κ (+ 1) :* (κ (+ 1) :* (Kx :* Kz :* (κ (+ 3) :* j)))))
-                                                                    refl (+ K x) (+ K z) (+ j)) ⟩
+                                                                    refl (+ fK x) (+ fK z) (+ j)) ⟩
               + 1 / (3 ℕ.* j)                                     ∎
 
             part3 : ℚ.∣ x₂ᵤₙ ∣ ℚ.* ℚ.∣ y₄ₜᵤₙ ℚ.* (z₂ₛₙ ℚ.- z₄ₜᵤₙ) ∣ ℚ.≤ + 1 / (3 ℕ.* j)
@@ -715,18 +738,18 @@ abstract
               ℚ.∣ x₂ᵤₙ ∣ ℚ.* ℚ.∣ y₄ₜᵤₙ ∣ ℚ.* ℚ.∣ z₂ₛₙ ℚ.- z₄ₜᵤₙ ∣ ≤⟨ ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ z₂ₛₙ ℚ.- z₄ₜᵤₙ ∣} _ (ℚP.≤-trans
                                                                     (ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ y₄ₜᵤₙ ∣} _
                                                                     (ℚP.<⇒≤ (canonical-strict-upper-bound x (2 ℕ.* u ℕ.* n))))
-                                                                    (ℚP.*-monoʳ-≤-nonNeg {+ K x / 1} _
+                                                                    (ℚP.*-monoʳ-≤-nonNeg {+ fK x / 1} _
                                                                     (ℚP.<⇒≤ (canonical-strict-upper-bound y (2 ℕ.* t ℕ.* (2 ℕ.* u ℕ.* n)))))) ⟩
-              (+ (K x ℕ.* K y) / 1) ℚ.* ℚ.∣ z₂ₛₙ ℚ.- z₄ₜᵤₙ ∣      ≤⟨ ℚP.*-monoʳ-≤-nonNeg {+ (K x ℕ.* K y) / 1} _
-                                                                     (proj₂ (fast-regular⇒cauchy z (K x ℕ.* K y ℕ.* (3 ℕ.* j)))
+              (+ (fK x ℕ.* fK y) / 1) ℚ.* ℚ.∣ z₂ₛₙ ℚ.- z₄ₜᵤₙ ∣      ≤⟨ ℚP.*-monoʳ-≤-nonNeg {+ (fK x ℕ.* fK y) / 1} _
+                                                                     (proj₂ (fast-regular⇒cauchy z (fK x ℕ.* fK y ℕ.* (3 ℕ.* j)))
                                                                      (2 ℕ.* s ℕ.* n) (2 ℕ.* t ℕ.* (2 ℕ.* u ℕ.* n))
                                                                      (N₃≤ (N≤2an s))
                                                                      (N₃≤ (N≤4abn t u))) ⟩
-              (+ (K x ℕ.* K y) / 1) ℚ.*
-              (+ 1 / (K x ℕ.* K y ℕ.* (3 ℕ.* j)))                 ≈⟨ ℚ.*≡* (ℤsolve 3 (λ Kx Ky j ->
+              (+ (fK x ℕ.* fK y) / 1) ℚ.*
+              (+ 1 / (fK x ℕ.* fK y ℕ.* (3 ℕ.* j)))                 ≈⟨ ℚ.*≡* (ℤsolve 3 (λ Kx Ky j ->
                                                                      (((Kx :* Ky) :* κ (+ 1)) :* (κ (+ 3) :* j)) :=
                                                                      (κ (+ 1) :* (κ (+ 1) :* (Kx :* Ky :* (κ (+ 3) :* j)))))
-                                                                     refl (+ K x) (+ K y) (+ j)) ⟩
+                                                                     refl (+ fK x) (+ fK y) (+ j)) ⟩
               + 1 / (3 ℕ.* j)                                      ∎
 
 *-distribˡ-+ : _DistributesOverˡ_ _≃_ _*_ _+_
@@ -748,13 +771,13 @@ abstract
     lemA (suc k₁) = N , lemB
       where
         j = suc k₁
-        r = K x ℕ.⊔ K (y + z)
-        s = K x ℕ.⊔ K y
-        t = K x ℕ.⊔ K z
-        N₁ = proj₁ (fast-regular⇒cauchy x (K y ℕ.* (4 ℕ.* j)))
-        N₂ = proj₁ (fast-regular⇒cauchy y (K x ℕ.* (4 ℕ.* j)))
-        N₃ = proj₁ (fast-regular⇒cauchy x (K z ℕ.* (4 ℕ.* j)))
-        N₄ = proj₁ (fast-regular⇒cauchy z (K x ℕ.* (4 ℕ.* j)))
+        r = fK x ℕ.⊔ fK (y + z)
+        s = fK x ℕ.⊔ fK y
+        t = fK x ℕ.⊔ fK z
+        N₁ = proj₁ (fast-regular⇒cauchy x (fK y ℕ.* (4 ℕ.* j)))
+        N₂ = proj₁ (fast-regular⇒cauchy y (fK x ℕ.* (4 ℕ.* j)))
+        N₃ = proj₁ (fast-regular⇒cauchy x (fK z ℕ.* (4 ℕ.* j)))
+        N₄ = proj₁ (fast-regular⇒cauchy z (fK x ℕ.* (4 ℕ.* j)))
         N = suc (N₁ ℕ.⊔ N₂ ℕ.⊔ N₃ ℕ.⊔ N₄)
 
         lemB : ∀ (n : ℕ) -> n ℕ.≥ N ->
@@ -799,16 +822,16 @@ abstract
                                                                             (ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ x₂ᵣₙ ℚ.- x₄ₛₙ ∣} _
                                                                                                  (ℚP.<⇒≤ (canonical-strict-upper-bound y
                                                                                                          (2 ℕ.* (2 ℕ.* r ℕ.* n)))))
-                                                                            (ℚP.*-monoʳ-≤-nonNeg {+ K y / 1} _
-                                                                                                 (proj₂ (fast-regular⇒cauchy x (K y ℕ.* (4 ℕ.* j)))
+                                                                            (ℚP.*-monoʳ-≤-nonNeg {+ fK y / 1} _
+                                                                                                 (proj₂ (fast-regular⇒cauchy x (fK y ℕ.* (4 ℕ.* j)))
                                                                                                  (2 ℕ.* r ℕ.* n) (2 ℕ.* s ℕ.* (2 ℕ.* n))
                                                                                                  (N₁≤ N≤2rn) (N₁≤ N≤4sn))))
                                                                             (ℚP.≤-trans
                                                                             (ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ y₄ᵣₙ ℚ.- y₄ₛₙ ∣} _
                                                                                                  (ℚP.<⇒≤ (canonical-strict-upper-bound x
                                                                                                          (2 ℕ.* s ℕ.* (2 ℕ.* n)))))
-                                                                            (ℚP.*-monoʳ-≤-nonNeg {+ K x / 1} _
-                                                                                                 (proj₂ (fast-regular⇒cauchy y (K x ℕ.* (4 ℕ.* j)))
+                                                                            (ℚP.*-monoʳ-≤-nonNeg {+ fK x / 1} _
+                                                                                                 (proj₂ (fast-regular⇒cauchy y (fK x ℕ.* (4 ℕ.* j)))
                                                                                                  (2 ℕ.* (2 ℕ.* r ℕ.* n)) (2 ℕ.* s ℕ.* (2 ℕ.* n))
                                                                                                  (N₂≤ N≤4rn) (N₂≤ N≤4sn)))))
                                                                 (ℚP.+-mono-≤
@@ -816,22 +839,22 @@ abstract
                                                                             (ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ x₂ᵣₙ ℚ.- x₄ₜₙ ∣} _
                                                                                                  (ℚP.<⇒≤ (canonical-strict-upper-bound z
                                                                                                          (2 ℕ.* (2 ℕ.* r ℕ.* n)))))
-                                                                            (ℚP.*-monoʳ-≤-nonNeg {+ K z / 1} _
-                                                                                                  (proj₂ (fast-regular⇒cauchy x (K z ℕ.* (4 ℕ.* j)))
+                                                                            (ℚP.*-monoʳ-≤-nonNeg {+ fK z / 1} _
+                                                                                                  (proj₂ (fast-regular⇒cauchy x (fK z ℕ.* (4 ℕ.* j)))
                                                                                                   (2 ℕ.* r ℕ.* n) (2 ℕ.* t ℕ.* (2 ℕ.* n))
                                                                                                   (N₃≤ N≤2rn) (N₃≤ N≤4tn))))
                                                                             (ℚP.≤-trans
                                                                             (ℚP.*-monoˡ-≤-nonNeg {ℚ.∣ z₄ᵣₙ ℚ.- z₄ₜₙ ∣} _
                                                                                                  (ℚP.<⇒≤ (canonical-strict-upper-bound x
                                                                                                          (2 ℕ.* t ℕ.* (2 ℕ.* n)))))
-                                                                            (ℚP.*-monoʳ-≤-nonNeg {+ K x / 1} _
-                                                                                                 (proj₂ (fast-regular⇒cauchy z (K x ℕ.* (4 ℕ.* j)))
+                                                                            (ℚP.*-monoʳ-≤-nonNeg {+ fK x / 1} _
+                                                                                                 (proj₂ (fast-regular⇒cauchy z (fK x ℕ.* (4 ℕ.* j)))
                                                                                                  (2 ℕ.* (2 ℕ.* r ℕ.* n)) (2 ℕ.* t ℕ.* (2 ℕ.* n))
                                                                                                  (N₄≤ N≤4rn) (N₄≤ N≤4tn))))) ⟩
-           (+ K y / 1) ℚ.* (+ 1 / (K y ℕ.* (4 ℕ.* j))) ℚ.+
-           (+ K x / 1) ℚ.* (+ 1 / (K x ℕ.* (4 ℕ.* j))) ℚ.+
-          ((+ K z / 1) ℚ.* (+ 1 / (K z ℕ.* (4 ℕ.* j))) ℚ.+
-           (+ K x / 1) ℚ.* (+ 1 / (K x ℕ.* (4 ℕ.* j))))     ≈⟨ ℚ.*≡* (ℤsolve 4 (λ Kx Ky Kz j ->
+           (+ fK y / 1) ℚ.* (+ 1 / (fK y ℕ.* (4 ℕ.* j))) ℚ.+
+           (+ fK x / 1) ℚ.* (+ 1 / (fK x ℕ.* (4 ℕ.* j))) ℚ.+
+          ((+ fK z / 1) ℚ.* (+ 1 / (fK z ℕ.* (4 ℕ.* j))) ℚ.+
+           (+ fK x / 1) ℚ.* (+ 1 / (fK x ℕ.* (4 ℕ.* j))))     ≈⟨ ℚ.*≡* (ℤsolve 4 (λ Kx Ky Kz j ->
 
           {- Function for solver -}
           (((Ky :* κ (+ 1)) :* (κ (+ 1) :* (Kx :* (κ (+ 4) :* j))) :+ ((Kx :* κ (+ 1)) :* (κ (+ 1) :* (Ky :* (κ (+ 4) :* j))))) :*
@@ -840,7 +863,7 @@ abstract
           ((κ (+ 1) :* (Ky :* (κ (+ 4) :* j))) :* (κ (+ 1) :* (Kx :* (κ (+ 4) :* j))))) :* j :=
           κ (+ 1) :* (((κ (+ 1) :* (Ky :* (κ (+ 4) :* j))) :* (κ (+ 1) :* (Kx :* (κ (+ 4) :* j)))) :*
           ((κ (+ 1) :* (Kz :* (κ (+ 4) :* j))) :* (κ (+ 1) :* (Kx :* (κ (+ 4) :* j))))))
-          refl (+ K x) (+ K y) (+ K z) (+ j)) ⟩
+          refl (+ fK x) (+ fK y) (+ fK z) (+ j)) ⟩
           + 1 / j                                            ∎
           where
             n : ℕ
@@ -884,15 +907,15 @@ abstract
 *-distrib-+ : _DistributesOver_ _≃_ _*_ _+_
 *-distrib-+ = *-distribˡ-+ , *-distribʳ-+
 
-*-identityˡ : LeftIdentity _≃_ 1ℝ _*_
+*-identityˡ : LeftIdentity _≃_ oneℝ _*_
 *-identityˡ x = *≃* lem
   where
     open ℚP.≤-Reasoning
     open ℤ-Solver
 
-    @0 lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq (1ℝ * x) n ℚ.- seq x n ∣ ℚ.≤ + 2 / n
-    lem (suc k₁) = let n = suc k₁; k = K 1ℝ ℕ.⊔ K x in begin
-           ℚ.∣ ℚ.1ℚᵘ ℚ.* seq x (2 ℕ.* k ℕ.* n) ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- seq x n) (ℚP.*-identityˡ (seq x (2 ℕ.* k ℕ.* n)))) ⟩
+    @0 lem : (n : ℕ) {n≢0 : n ≢0} → ℚ.∣ seq (oneℝ * x) n ℚ.- seq x n ∣ ℚ.≤ + 2 / n
+    lem (suc k₁) = let n = suc k₁; k = fK oneℝ ℕ.⊔ fK x in begin
+           ℚ.∣ (+ 1 / 1) ℚ.* seq x (2 ℕ.* k ℕ.* n) ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- seq x n) (ℚP.*-identityˡ (seq x (2 ℕ.* k ℕ.* n)))) ⟩
            ℚ.∣ seq x (2 ℕ.* k ℕ.* n) ℚ.- seq x n ∣         ≤⟨ reg x (2 ℕ.* k ℕ.* n) n ⟩
            (+ 1 / (2 ℕ.* k ℕ.* n)) ℚ.+ (+ 1 / n)           ≤⟨ ℚP.+-monoˡ-≤ (+ 1 / n) {+ 1 / (2 ℕ.* k ℕ.* n)} {+ 1 / n} (ℚ.*≤* (ℤP.*-monoˡ-≤-nonNeg 1 (ℤ.+≤+ (ℕP.m≤n*m n {2 ℕ.* k} ℕP.0<1+n)))) ⟩
            (+ 1 / n) ℚ.+ (+ 1 / n)                         ≈⟨ ℚ.*≡* (solve 1 (λ n ->
@@ -900,26 +923,26 @@ abstract
                                                                     refl (+ n)) ⟩
            + 2 / n                                          ∎
 
-*-identityʳ : RightIdentity _≃_ 1ℝ _*_
-*-identityʳ x = ≃-trans (*-comm x 1ℝ) (*-identityˡ x)
+*-identityʳ : RightIdentity _≃_ oneℝ _*_
+*-identityʳ x = ≃-trans (*-comm x oneℝ) (*-identityˡ x)
 
-*-identity : Identity _≃_ 1ℝ _*_
+*-identity : Identity _≃_ oneℝ _*_
 *-identity = *-identityˡ , *-identityʳ
 
-*-zeroˡ : LeftZero _≃_ 0ℝ _*_
-*-zeroˡ x = *≃* (λ @0 { (suc k₁) -> let n = suc k₁; k = K 0ℝ ℕ.⊔ K x in begin
-  ℚ.∣ 0ℚᵘ ℚ.* seq x (2 ℕ.* k ℕ.* n) ℚ.- 0ℚᵘ ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- 0ℚᵘ) (ℚP.*-zeroˡ (seq x (2 ℕ.* k ℕ.* n)))) ⟩
-  0ℚᵘ                                         ≤⟨ ℚ.*≤* (ℤP.≤-trans (ℤP.≤-reflexive (ℤP.*-zeroˡ (+ n))) (ℤ.+≤+ ℕ.z≤n)) ⟩
+*-zeroˡ : LeftZero _≃_ zeroℝ _*_
+*-zeroˡ x = *≃* (λ @0 { (suc k₁) -> let n = suc k₁; k = fK zeroℝ ℕ.⊔ fK x in begin
+  ℚ.∣ (+ 0 / 1) ℚ.* seq x (2 ℕ.* k ℕ.* n) ℚ.- (+ 0 / 1) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- (+ 0 / 1)) (ℚP.*-zeroˡ (seq x (2 ℕ.* k ℕ.* n)))) ⟩
+  (+ 0 / 1)                                         ≤⟨ ℚ.*≤* (ℤP.≤-trans (ℤP.≤-reflexive (ℤP.*-zeroˡ (+ n))) (ℤ.+≤+ ℕ.z≤n)) ⟩
   + 2 / n                                      ∎})
   where open ℚP.≤-Reasoning
 
-*-zeroʳ : RightZero _≃_ 0ℝ _*_
-*-zeroʳ x = ≃-trans (*-comm x 0ℝ) (*-zeroˡ x)
+*-zeroʳ : RightZero _≃_ zeroℝ _*_
+*-zeroʳ x = ≃-trans (*-comm x zeroℝ) (*-zeroˡ x)
 
-*-zero : Zero _≃_ 0ℝ _*_
+*-zero : Zero _≃_ zeroℝ _*_
 *-zero = *-zeroˡ , *-zeroʳ
 
--- Properties of -_
+-- Properties of negate
 
 -‿cong : Congruent₁ _≃_ (-_)
 -‿cong {x} {y} (*≃* x₁) = *≃* lem
@@ -937,17 +960,17 @@ abstract
 @0 neg-involutive : Involutive _≃_ (-_)
 neg-involutive x = *≃* λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ ℚ.- (ℚ.- seq x n) ℚ.- seq x n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseˡ (ℚ.- seq x n)) ⟩
-  0ℚᵘ                                 ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                                 ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                              ∎}
   where open ℚP.≤-Reasoning
 
-@0 neg-distrib-+ : ∀ x y -> - (x + y) ≃ (- x) + (- y)
+@0 neg-distrib-+ : ∀ x y -> - (x + y) ≃ - x + - y
 neg-distrib-+ x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ ℚ.- (seq x (2 ℕ.* n) ℚ.+ seq y (2 ℕ.* n)) ℚ.-
       (ℚ.- seq x (2 ℕ.* n) ℚ.- seq y (2 ℕ.* n)) ∣   ≈⟨ ℚP.∣-∣-cong (solve 2 (λ x y ->
-                                                       (⊝ (x ⊕ y) ⊖ (⊝ x ⊖ y)) ⊜ Κ (0ℚᵘ)) ℚP.≃-refl
+                                                       (⊝ (x ⊕ y) ⊖ (⊝ x ⊖ y)) ⊜ Κ ((+ 0 / 1))) ℚP.≃-refl
                                                        (seq x (2 ℕ.* n)) (seq y (2 ℕ.* n))) ⟩
-  0ℚᵘ                                               ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                                               ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                                            ∎})
   where
     open ℚP.≤-Reasoning
@@ -1025,7 +1048,7 @@ neg-distrib-+ x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
 ⊔-comm x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ seq x n ℚ.⊔ seq y n ℚ.- (seq y n ℚ.⊔ seq x n) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (seq x n ℚ.⊔ seq y n) (ℚP.-‿cong (ℚP.⊔-comm (seq y n) (seq x n)))) ⟩
   ℚ.∣ seq x n ℚ.⊔ seq y n ℚ.- (seq x n ℚ.⊔ seq y n) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq x n ℚ.⊔ seq y n)) ⟩
-  0ℚᵘ                                                ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                                                ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                                              ∎})
   where open ℚP.≤-Reasoning
 
@@ -1034,7 +1057,7 @@ neg-distrib-+ x y = *≃* (λ { (suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ seq x n ℚ.⊔ seq y n ℚ.⊔ seq z n ℚ.- (seq x n ℚ.⊔ (seq y n ℚ.⊔ seq z n)) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (seq x n ℚ.⊔ seq y n ℚ.⊔ seq z n)
                                                                                               (ℚP.-‿cong (ℚP.≃-sym (ℚP.⊔-assoc (seq x n) (seq y n) (seq z n))))) ⟩
   ℚ.∣ seq x n ℚ.⊔ seq y n ℚ.⊔ seq z n ℚ.- (seq x n ℚ.⊔ seq y n ℚ.⊔ seq z n) ∣   ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (seq x n ℚ.⊔ seq y n ℚ.⊔ seq z n)) ⟩
-  0ℚᵘ                                                                          ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                                                                          ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                                                                       ∎})
   where open ℚP.≤-Reasoning
 
@@ -1046,7 +1069,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
                                                          (ℚP.-‿cong (ℚP.≃-trans (ℚP.neg-distrib-⊔-⊓ (ℚ.- xₙ) (ℚ.- yₙ))
                                                          (ℚP.⊓-cong (ℚP.neg-involutive xₙ) (ℚP.neg-involutive yₙ))))) ⟩
   ℚ.∣ xₙ ℚ.⊓ yₙ ℚ.- xₙ ℚ.⊓ yₙ ∣                       ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ (xₙ ℚ.⊓ yₙ)) ⟩
-  0ℚᵘ                                                ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                                                ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                                             ∎})
   where open ℚP.≤-Reasoning
 
@@ -1066,7 +1089,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
 ⊓₂-assoc x y z = -‿cong (begin
   (- (- (- x ⊔ - y))) ⊔ (- z) ≈⟨ ⊔-congʳ (neg-involutive (- x ⊔ - y)) ⟩
   (- x ⊔ - y) ⊔ (- z)         ≈⟨ ⊔-assoc (- x) (- y) (- z) ⟩
-  (- x) ⊔ (- y ⊔ - z)         ≈⟨ ⊔-congˡ (≃-symm (neg-involutive (- y ⊔ - z))) ⟩
+  (- x) ⊔ (- y ⊔ - z)         ≈⟨ ⊔-congˡ (≃-sym (neg-involutive (- y ⊔ - z))) ⟩
   (- x) ⊔ (- (- (- y ⊔ - z)))                            ∎)
   where open ≃-Reasoning
 
@@ -1074,7 +1097,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
 ⊓-cong {x} {u} {y} {v} x≃u y≃v = begin
   x ⊓ y  ≈⟨ x⊓y≃x⊓₂y x y ⟩
   x ⊓₂ y ≈⟨ ⊓₂-cong x≃u y≃v ⟩
-  u ⊓₂ v ≈⟨ ≃-symm (x⊓y≃x⊓₂y u v) ⟩
+  u ⊓₂ v ≈⟨ ≃-sym (x⊓y≃x⊓₂y u v) ⟩
   u ⊓ v   ∎
   where open ≃-Reasoning
 
@@ -1088,7 +1111,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
 ⊓-comm x y = begin
   x ⊓ y  ≈⟨ x⊓y≃x⊓₂y x y ⟩
   x ⊓₂ y ≈⟨ ⊓₂-comm x y ⟩
-  y ⊓₂ x ≈⟨ ≃-symm (x⊓y≃x⊓₂y y x) ⟩
+  y ⊓₂ x ≈⟨ ≃-sym (x⊓y≃x⊓₂y y x) ⟩
   y ⊓ x   ∎
   where open ≃-Reasoning
 
@@ -1096,7 +1119,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
 ⊓-assoc x y z = begin
   x ⊓ y ⊓ z     ≈⟨ ≃-trans (⊓-congʳ (x⊓y≃x⊓₂y x y)) (x⊓y≃x⊓₂y (x ⊓₂ y) z) ⟩
   x ⊓₂ y ⊓₂ z   ≈⟨ ⊓₂-assoc x y z ⟩
-  x ⊓₂ (y ⊓₂ z) ≈⟨ ≃-trans (⊓₂-congˡ (≃-symm (x⊓y≃x⊓₂y y z))) (≃-symm (x⊓y≃x⊓₂y x (y ⊓ z))) ⟩
+  x ⊓₂ (y ⊓₂ z) ≈⟨ ≃-trans (⊓₂-congˡ (≃-sym (x⊓y≃x⊓₂y y z))) (≃-sym (x⊓y≃x⊓₂y x (y ⊓ z))) ⟩
   x ⊓ (y ⊓ z)    ∎
   where open ≃-Reasoning
 
@@ -1114,11 +1137,11 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
            + 2 / n                               ∎
 
 @0 ∣x*y∣≃∣x∣*∣y∣ : ∀ x y -> ∣ x * y ∣ ≃ ∣ x ∣ * ∣ y ∣
-∣x*y∣≃∣x∣*∣y∣ x y = *≃* (λ { (suc k₁) -> let n = suc k₁; r = K x ℕ.⊔ K y in begin
+∣x*y∣≃∣x∣*∣y∣ x y = *≃* (λ { (suc k₁) -> let n = suc k₁; r = fK x ℕ.⊔ fK y in begin
   ℚ.∣ ℚ.∣ seq (x * y) n ∣ ℚ.- seq (∣ x ∣ * ∣ y ∣) n ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ ℚ.∣ seq (x * y) n ∣
                                                         (ℚP.-‿cong (ℚP.≃-sym (ℚP.∣p*q∣≃∣p∣*∣q∣ (seq x (2 ℕ.* r ℕ.* n)) (seq y (2 ℕ.* r ℕ.* n)))))) ⟩
   ℚ.∣ ℚ.∣ seq (x * y) n ∣ ℚ.- ℚ.∣ seq (x * y) n ∣ ∣   ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ ℚ.∣ seq (x * y) n ∣) ⟩
-  0ℚᵘ                                                ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                                                ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n ∎})
   where open ℚP.≤-Reasoning
 
@@ -1133,7 +1156,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
 +-rawMonoid = record
   { _≈_ = _≃_
   ; _∙_ = _+_
-  ; ε   = 0ℝ
+  ; ε   = zeroℝ
   }
 
 @0 +-0-rawGroup : RawGroup 0ℓ 0ℓ
@@ -1141,7 +1164,7 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   { Carrier = ℝ
   ; _≈_ = _≃_
   ; _∙_ = _+_
-  ; ε = 0ℝ
+  ; ε = zeroℝ
   ; _⁻¹ = -_
   }
 
@@ -1151,8 +1174,8 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   ; _≈_     = _≃_
   ; _+_     = _+_
   ; _*_     = _*_
-  ; 0#      = 0ℝ
-  ; 1#      = 1ℝ
+  ; 0#      = zeroℝ
+  ; 1#      = oneℝ
   }
 
 @0 +-*-rawRing : RawRing 0ℓ 0ℓ
@@ -1162,8 +1185,8 @@ x⊓y≃x⊓₂y x y = *≃* (λ { (suc k₁) -> let n = suc k₁; xₙ = seq x 
   ; _+_ = _+_
   ; _*_ = _*_
   ; -_ = -_
-  ; 0# = 0ℝ
-  ; 1# = 1ℝ
+  ; 0# = zeroℝ
+  ; 1# = oneℝ
   }
 
 abstract
@@ -1176,10 +1199,10 @@ abstract
 -‿cong₂ : Congruent₁ _≃_ (-_)
 -‿cong₂ = -‿cong
 
-+-inverse₂ : Inverse _≃_ 0ℝ -_ _+_
++-inverse₂ : Inverse _≃_ zeroℝ -_ _+_
 +-inverse₂ = +-inverse
 
-+-identity₂ : Identity _≃_ 0ℝ _+_
++-identity₂ : Identity _≃_ zeroℝ _+_
 +-identity₂ = +-identity
 
 +-assoc₂ : Associative _≃_ _+_
@@ -1201,19 +1224,19 @@ abstract
   ; assoc = +-assoc₂
   }
 
-+-0-isMonoid : IsMonoid _≃_ _+_ 0ℝ
++-0-isMonoid : IsMonoid _≃_ _+_ zeroℝ
 +-0-isMonoid = record
   { isSemigroup = +-isSemigroup
   ; identity = +-identity₂
   }
 
-@0 +-0-isCommutativeMonoid : IsCommutativeMonoid _≃_ _+_ 0ℝ
+@0 +-0-isCommutativeMonoid : IsCommutativeMonoid _≃_ _+_ zeroℝ
 +-0-isCommutativeMonoid = record
   { isMonoid = +-0-isMonoid
   ; comm     = +-comm
   }
 
-+-0-isGroup : IsGroup _≃_ _+_ 0ℝ (-_)
++-0-isGroup : IsGroup _≃_ _+_ zeroℝ (-_)
 +-0-isGroup = record
   { isMonoid = +-0-isMonoid
   ; inverse = +-inverse₂
@@ -1221,7 +1244,7 @@ abstract
   }
 
 
-+-0-isAbelianGroup : IsAbelianGroup _≃_ _+_ 0ℝ (-_)
++-0-isAbelianGroup : IsAbelianGroup _≃_ _+_ zeroℝ (-_)
 +-0-isAbelianGroup = record
   { isGroup = +-0-isGroup
   ; comm    = +-comm₂
@@ -1267,7 +1290,7 @@ abstract
 *-rawMonoid = record
   { _≈_ = _≃_
   ; _∙_ = _*_
-  ; ε   = 1ℝ
+  ; ε   = oneℝ
   }
 
 abstract
@@ -1291,16 +1314,16 @@ abstract
   }
 
 abstract
-  @0 *-identity₂ : Identity _≃_ 1ℝ _*_
+  @0 *-identity₂ : Identity _≃_ oneℝ _*_
   *-identity₂ = *-identity
 
-*-1-isMonoid : IsMonoid _≃_ _*_ 1ℝ
+*-1-isMonoid : IsMonoid _≃_ _*_ oneℝ
 *-1-isMonoid = record
   { isSemigroup = *-isSemigroup
   ; identity    = *-identity
   }
 
-@0 *-1-isCommutativeMonoid : IsCommutativeMonoid _≃_ _*_ 1ℝ
+@0 *-1-isCommutativeMonoid : IsCommutativeMonoid _≃_ _*_ oneℝ
 *-1-isCommutativeMonoid = record
   { isMonoid = *-1-isMonoid
   ; comm     = *-comm
@@ -1311,13 +1334,13 @@ abstract
   *-distrib-+₂ : (_≃_ DistributesOver _*_) _+_
   *-distrib-+₂ = *-distrib-+
 
-*-zero₂ : Zero _≃_ 0ℝ _*_
+*-zero₂ : Zero _≃_ zeroℝ _*_
 *-zero₂ = *-zero
 
 *-comm₂ : Commutative _≃_ _*_
 *-comm₂ = *-comm
   
-+-*-isRing : IsRing _≃_ _+_ _*_ -_ 0ℝ 1ℝ
++-*-isRing : IsRing _≃_ _+_ _*_ -_ zeroℝ oneℝ
 +-*-isRing = record
   { +-isAbelianGroup = +-0-isAbelianGroup
   ; *-isMonoid       = *-1-isMonoid
@@ -1325,26 +1348,26 @@ abstract
   ; zero             = *-zero₂
   }
 
-+-*-isCommutativeRing : IsCommutativeRing _≃_ _+_ _*_ -_ 0ℝ 1ℝ
++-*-isCommutativeRing : IsCommutativeRing _≃_ _+_ _*_ -_ zeroℝ oneℝ
 +-*-isCommutativeRing = record
   { isRing = +-*-isRing
   ; *-comm = *-comm₂
   }
 
-@0 +-*-isSemiringWithoutAnnihilatingZero : IsSemiringWithoutAnnihilatingZero _≃_ _+_ _*_ 0ℝ 1ℝ
+@0 +-*-isSemiringWithoutAnnihilatingZero : IsSemiringWithoutAnnihilatingZero _≃_ _+_ _*_ zeroℝ oneℝ
 +-*-isSemiringWithoutAnnihilatingZero = record
   { +-isCommutativeMonoid = +-0-isCommutativeMonoid
   ; *-isMonoid            = *-1-isMonoid
   ; distrib               = *-distrib-+
   }
 
-@0 +-*-isSemiring : IsSemiring _≃_ _+_ _*_ 0ℝ 1ℝ
+@0 +-*-isSemiring : IsSemiring _≃_ _+_ _*_ zeroℝ oneℝ
 +-*-isSemiring = record
   { isSemiringWithoutAnnihilatingZero = +-*-isSemiringWithoutAnnihilatingZero
   ; zero                              = *-zero
   }
 
-@0 +-*-isCommutativeSemiring : IsCommutativeSemiring _≃_ _+_ _*_ 0ℝ 1ℝ
+@0 +-*-isCommutativeSemiring : IsCommutativeSemiring _≃_ _+_ _*_ zeroℝ oneℝ
 +-*-isCommutativeSemiring = record
   { isSemiring = +-*-isSemiring
   ; *-comm     = *-comm
@@ -1391,9 +1414,9 @@ abstract
   }
 
 -- Properties of sign predicates
-
-lemma-2-8-1-if : ∀ {x} -> Positive x -> ∃0 (λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1))
-lemma-2-8-1-if {x} (pos* (n-1 , posx)) = ℕ.pred N , lem
+-- x has to be explicit (`implicit type argument not supported`)
+lemma281If : ∀ (x : ℝ) -> Positive x -> Σ0 ℕ (λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1))
+lemma281If x (MkPos (nm1 :&: posx)) = ℕ.pred l :&: lem
   where
     open ℚP.≤-Reasoning
     open ℚ-Solver
@@ -1407,45 +1430,48 @@ lemma-2-8-1-if {x} (pos* (n-1 , posx)) = ℕ.pred N , lem
         ; Κ     to κ
         )
     n : ℕ
-    n = suc n-1
-    arch : ∃0 λ (N-1 : ℕ) -> (+ 2) / (suc N-1) ℚ.< (seq x n ℚ.- + 1 / n)
-    arch = fast-archimedean-ℚ₂ (seq x n ℚ.- + 1 / n) (+ 2) (ℚ.positive (p<q⇒0<q-p (+ 1 / n) (seq x n) posx))
-    N : ℕ
-    N = suc (proj₁ arch)
+    n = suc nm1
+    arch : Σ0 ℕ λ (N-1 : ℕ) -> (+ 2) / (suc N-1) ℚ.< (seq x n ℚ.- + 1 / n)
+    arch = fastArchimedeanℚ₂ (seq x n ℚ.- + 1 / n) (+ 2) (ℚ.positive (p<q⇒0<q-p (+ 1 / n) (seq x n) posx))
+    l : ℕ
+    l = suc (proj₁ arch)
 
-    @0 lem : (m : ℕ) → m ℕ.≥ suc (ℕ.pred N) → seq x m ℚ.≥ + 1 / suc (ℕ.pred N)
-    lem (suc k₁) m≥N = let m = suc k₁ in begin
-           + 1 / N                               ≈⟨ ℚ.*≡* (ℤsolve 1 (λ N ->
+    @0 lem : (m : ℕ) → m ℕ.≥ suc (ℕ.pred l) → seq x m ℚ.≥ + 1 / suc (ℕ.pred l)
+    lem (suc k₁) m≥l = let m = suc k₁ in begin
+           + 1 / l                               ≈⟨ ℚ.*≡* (ℤsolve 1 (λ N ->
                                                     κ (+ 1) :* (N :* N) := ((κ (+ 2) :* N :- κ (+ 1) :* N) :* N))
-                                                    refl (+ N)) ⟩
-           + 2 / N ℚ.- + 1 / N                   ≤⟨ ℚP.+-mono-≤ (ℚP.<⇒≤ (proj₂ arch)) (ℚP.neg-mono-≤ (q≤r⇒+p/r≤+p/q 1 N m m≥N)) ⟩
+                                                    refl (+ l)) ⟩
+           + 2 / l ℚ.- + 1 / l                   ≤⟨ ℚP.+-mono-≤ (ℚP.<⇒≤ (proj₂ arch)) (ℚP.neg-mono-≤ (q≤r⇒+p/r≤+p/q 1 l m m≥l)) ⟩
            seq x n ℚ.- + 1 / n ℚ.- + 1 / m       ≈⟨ solve 3 (λ xₙ n⁻¹ m⁻¹ -> (xₙ ⊖ n⁻¹ ⊖ m⁻¹) ⊜ (xₙ ⊖ (n⁻¹ ⊕ m⁻¹))) ℚP.≃-refl (seq x n) (+ 1 / n) (+ 1 / m) ⟩
            seq x n ℚ.- (+ 1 / n ℚ.+ + 1 / m)     ≤⟨ ℚP.+-monoʳ-≤ (seq x n) (ℚP.neg-mono-≤ (reg x n m)) ⟩
            seq x n ℚ.- ℚ.∣ seq x n ℚ.- seq x m ∣ ≤⟨ ℚP.+-monoʳ-≤ (seq x n) (ℚP.neg-mono-≤ (p≤∣p∣ (seq x n ℚ.- seq x m))) ⟩
            seq x n ℚ.- (seq x n ℚ.- seq x m)     ≈⟨ solve 2 (λ xₙ xₘ -> (xₙ ⊖ (xₙ ⊖ xₘ)) ⊜ xₘ) ℚP.≃-refl (seq x n) (seq x m) ⟩
            seq x m  ∎
+{-# COMPILE AGDA2HS lemma281If #-}
 
 abstract
-  fast-lemma-2-8-1-if : ∀ {x} -> Positive x -> ∃0 λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)
-  fast-lemma-2-8-1-if = lemma-2-8-1-if
+  fastLemma281If : ∀ (x : ℝ) -> Positive x -> Σ0 ℕ λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)
+  fastLemma281If = lemma281If
+  {-# COMPILE AGDA2HS fastLemma281If #-}
 
-lemma-2-8-1-onlyif : ∀ {x : ℝ} -> (∃0 λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)) -> Positive x
-lemma-2-8-1-onlyif {x} (N-1 , proof) = pos* (N , (begin-strict
-  + 1 / (suc N) <⟨ ℚ.*<* (ℤP.*-monoˡ-<-pos 0 (ℤ.+<+ (ℕP.n<1+n N))) ⟩
-  + 1 / N       ≤⟨ proof (suc N) (ℕP.n≤1+n N) ⟩
-  seq x (suc N)  ∎))
+lemma281OnlyIf : ∀ (x : ℝ) -> (Σ0 ℕ λ (k-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc k-1 -> seq x m ℚ.≥ + 1 / (suc k-1)) -> Positive x
+lemma281OnlyIf x (km1 :&: proof) = MkPos (k :&: (begin-strict
+  + 1 / (suc k) <⟨ ℚ.*<* (ℤP.*-monoˡ-<-pos 0 (ℤ.+<+ (ℕP.n<1+n k))) ⟩
+  + 1 / k       ≤⟨ proof (suc k) (ℕP.n≤1+n k) ⟩
+  seq x (suc k)  ∎))
   where
     open ℚP.≤-Reasoning
-    N : ℕ
-    N = suc N-1
+    k : ℕ
+    k = suc km1
+{-# COMPILE AGDA2HS lemma281OnlyIf #-}
 
 --to extract the erased proof from an erased NonNegative argument
-@0 nonNeg-unpack : {x : ℝ} → NonNegative x → (∀ (n : ℕ) -> {n≢0 : n ≢0} -> seq x n ℚ.≥ ℚ.- ((+ 1 / n) {n≢0}))
+@0 nonNeg-unpack : {x : ℝ} → NonNegative x → (∀ (n : ℕ) -> {@0 n≢0 : n ≢0} -> seq x n ℚ.≥ ℚ.- ((+ 1 / n) {n≢0}))
 nonNeg-unpack (nonNeg* nonx) = nonx
 
-lemma-2-8-2-if : ∀ {x : ℝ} -> @0 NonNegative x -> ∀ (n : ℕ) -> {n≢0 : n ≢0} ->
-                 ∃0 λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})
-lemma-2-8-2-if {x} nonNegx (suc k₁) = n , _ , lem
+lemma282If : ∀ {x : ℝ} -> @0 NonNegative x -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
+                 Σ0 ℕ λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})
+lemma282If {x} nonNegx (suc k₁) = n :&: (_ , lem)
   where
     open ℚP.≤-Reasoning
     n : ℕ
@@ -1457,12 +1483,25 @@ lemma-2-8-2-if {x} nonNegx (suc k₁) = n , _ , lem
                     ℚ.- (+ 1 / m) ≤⟨ (nonNeg-unpack nonNegx) m ⟩
                     seq x m        ∎
 
-abstract
-  fast-lemma-2-8-2-if : ∀ {x : ℝ} -> @0 NonNegative x -> ∀ (n : ℕ) -> {n≢0 : n ≢0} ->
-                        ∃0 λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})
-  fast-lemma-2-8-2-if = lemma-2-8-2-if
+lemma282If' : ∀ (x : ℝ) -> @0 NonNegative x -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
+                 Σ0 ℕ (λ _ → ⊤)
+lemma282If' x _ n = n :&: tt
+{-# COMPILE AGDA2HS lemma282If' #-}
 
-lemma-2-8-2-onlyif : ∀ {x : ℝ} -> @0 (∀ (n : ℕ) -> {n≢0 : n ≢0} -> ∃0 λ (Nₙ : ℕ) -> Nₙ ≢0 ×
+proj₁lemma282If≡proj₁lemma282If' : ∀ (x : ℝ) -> (@0 nonNegx : NonNegative x) -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
+                                        proj₁ (lemma282If {x} nonNegx n {n≢0}) ≡ proj₁ (lemma282If' x nonNegx n {n≢0})
+proj₁lemma282If≡proj₁lemma282If' x nonNegx (suc k₁) = refl
+
+abstract
+  fastLemma282If : ∀ {x : ℝ} -> @0 NonNegative x -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
+                        Σ0 ℕ (λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0}))
+  fastLemma282If = lemma282If
+
+  proj₁fastLemma282If≡proj₁lemma282If' : ∀ (x : ℝ) -> (@0 nonNegx : NonNegative x) -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
+                                          proj₁ (fastLemma282If {x} nonNegx n {n≢0}) ≡ proj₁ (lemma282If' x nonNegx n {n≢0})
+  proj₁fastLemma282If≡proj₁lemma282If' x nonNegx (suc k₁) = refl
+
+lemma-2-8-2-onlyif : ∀ {x : ℝ} -> @0 (∀ (n : ℕ) -> {@0 n≢0 : n ≢0} -> ∃0 λ (Nₙ : ℕ) -> Nₙ ≢0 ×
                      (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})) -> NonNegative x
 lemma-2-8-2-onlyif {x} hyp = nonNeg* lem
   where
@@ -1477,12 +1516,12 @@ lemma-2-8-2-onlyif {x} hyp = nonNeg* lem
         ; Κ     to κ
         )
     
-    @0 lem : (n : ℕ) {n≢0 : n ≢0} → seq x n ℚ.≥ ℚ.- (+ 1 / n)
+    @0 lem : (n : ℕ) {@0 n≢0 : n ≢0} → seq x n ℚ.≥ ℚ.- (+ 1 / n)
     lem (suc k₁) = p-j⁻¹≤q⇒p≤q lem₂
       where
       n : ℕ
       n = suc k₁
-      @0 lem₂ : (j : ℕ) {j≢0 : j ≢0} → mkℚᵘ -[1+ 0 ] k₁ ℚ.- + 1 / j ℚ.≤ seq x (suc k₁)
+      @0 lem₂ : (j : ℕ) {@0 j≢0 : j ≢0} → mkℚᵘ -[1+ 0 ] k₁ ℚ.- + 1 / j ℚ.≤ seq x (suc k₁)
       lem₂ (suc k₂) = let j = suc k₂; N₂ⱼ = suc (proj₁ (hyp (2 ℕ.* j))); m = N₂ⱼ ℕ.⊔ (2 ℕ.* j) in begin
                      ℚ.- (+ 1 / n) ℚ.- (+ 1 / j)                             ≈⟨ ℚP.+-congʳ (ℚ.- (+ 1 / n)) {ℚ.- (+ 1 / j)} {ℚ.- (+ 1 / (2 ℕ.* j) ℚ.+ + 1 / (2 ℕ.* j))}
                                                                                 (ℚP.-‿cong (ℚ.*≡* (ℤsolve 1 (λ j ->
@@ -1502,8 +1541,8 @@ lemma-2-8-2-onlyif {x} hyp = nonNeg* lem
                      seq x m ℚ.- (seq x m ℚ.- seq x n)                       ≈⟨ solve 2 (λ xₘ xₙ -> (xₘ ⊖ (xₘ ⊖ xₙ)) ⊜ xₙ) ℚP.≃-refl (seq x m) (seq x n) ⟩
                      seq x n                                                  ∎
 
-pos-cong : ∀ {x y} -> x ≃ y -> Positive x -> Positive y
-pos-cong {x} {y} x≃y posx = lemma-2-8-1-onlyif {y} (ℕ.pred (2 ℕ.* N) , lem)
+posCong : ∀ (x y : ℝ) -> @0 (x ≃ y) -> Positive x -> Positive y
+posCong x y x≃y posx = lemma281OnlyIf y (ℕ.pred (2 ℕ.* l) :&: lem)
   where
     open ℚP.≤-Reasoning
     open ℚ-Solver
@@ -1516,50 +1555,51 @@ pos-cong {x} {y} x≃y posx = lemma-2-8-1-onlyif {y} (ℕ.pred (2 ℕ.* N) , lem
         ; _⊜_   to _:=_
         ; Κ     to κ
         )
-    fromPosx : ∃0 λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)
-    fromPosx = fast-lemma-2-8-1-if posx
-    N₁ : ℕ
-    N₁ = suc (proj₁ fromPosx)
-    fromx≃y : ∃0 λ (N : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ N ->
-                         ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / (2 ℕ.* N₁))
-    fromx≃y = fast-equality-lemma-if x y x≃y (2 ℕ.* N₁)
-    N₂ N : ℕ
-    N₂ = suc (proj₁ fromx≃y)
-    N = N₁ ℕ.⊔ N₂
+    fromPosx : Σ0 ℕ λ (l₁-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc l₁-1 -> seq x m ℚ.≥ + 1 / (suc l₁-1)
+    fromPosx = fastLemma281If x posx
+    l₁ : ℕ
+    l₁ = suc (proj₁ fromPosx)
+    fromxeqy : Σ0 ℕ λ (l : ℕ) -> ∀ (n : ℕ) -> n ℕ.≥ l ->
+                         ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 1 / (2 ℕ.* l₁))
+    fromxeqy = fastEqualityLemmaIf x y x≃y (2 ℕ.* l₁)
+    l₂ l : ℕ
+    l₂ = suc (proj₁ fromxeqy)
+    l = l₁ ℕ.⊔ l₂
 
-    @0 lem : (m : ℕ) → m ℕ.≥ suc (ℕ.pred (2 ℕ.* N)) → seq y m ℚ.≥ + 1 / suc (ℕ.pred (2 ℕ.* N))
-    lem (suc k₁) m≥2N = let m = suc k₁ in begin
-          + 1 / (2 ℕ.* N)                       ≤⟨ q≤r⇒+p/r≤+p/q 1 (2 ℕ.* N₁) (2 ℕ.* N) (ℕP.*-monoʳ-≤ 2 (ℕP.m≤m⊔n N₁ N₂)) ⟩
-          + 1 / (2 ℕ.* N₁)                      ≈⟨ ℚ.*≡* (ℤsolve 1 (λ N₁ ->
-                                                   κ (+ 1) :* (N₁ :* (κ (+ 2) :* N₁)) :=
-                                                   (κ (+ 1) :* (κ (+ 2) :* N₁) :+ (:- κ (+ 1)) :* N₁) :* (κ (+ 2) :* N₁))
-                                                   refl (+ N₁)) ⟩
-          + 1 / N₁ ℚ.- + 1 / (2 ℕ.* N₁)         ≤⟨ ℚP.+-mono-≤
-                                                   (proj₂ fromPosx m (ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) (ℕP.≤-trans (ℕP.m≤n*m N {2} ℕP.0<1+n) m≥2N)))
-                                                   (ℚP.neg-mono-≤ (proj₂ fromx≃y m
-                                                   (ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred N₂)) (ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) (ℕP.≤-trans (ℕP.m≤n*m N {2} ℕP.0<1+n) m≥2N))))) ⟩
+    @0 lem : (m : ℕ) → m ℕ.≥ suc (ℕ.pred (2 ℕ.* l)) → seq y m ℚ.≥ + 1 / suc (ℕ.pred (2 ℕ.* l))
+    lem (suc k₁) m≥2l = let m = suc k₁ in begin
+          + 1 / (2 ℕ.* l)                       ≤⟨ q≤r⇒+p/r≤+p/q 1 (2 ℕ.* l₁) (2 ℕ.* l) (ℕP.*-monoʳ-≤ 2 (ℕP.m≤m⊔n l₁ l₂)) ⟩
+          + 1 / (2 ℕ.* l₁)                      ≈⟨ ℚ.*≡* (ℤsolve 1 (λ l₁ ->
+                                                   κ (+ 1) :* (l₁ :* (κ (+ 2) :* l₁)) :=
+                                                   (κ (+ 1) :* (κ (+ 2) :* l₁) :+ (:- κ (+ 1)) :* l₁) :* (κ (+ 2) :* l₁))
+                                                   refl (+ l₁)) ⟩
+          + 1 / l₁ ℚ.- + 1 / (2 ℕ.* l₁)         ≤⟨ ℚP.+-mono-≤
+                                                   (proj₂ fromPosx m (ℕP.≤-trans (ℕP.m≤m⊔n l₁ l₂) (ℕP.≤-trans (ℕP.m≤n*m l {2} ℕP.0<1+n) m≥2l)))
+                                                   (ℚP.neg-mono-≤ (proj₂ fromxeqy m
+                                                   (ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred l₂)) (ℕP.≤-trans (ℕP.m≤n⊔m l₁ l₂) (ℕP.≤-trans (ℕP.m≤n*m l {2} ℕP.0<1+n) m≥2l))))) ⟩
           seq x m ℚ.- ℚ.∣ seq x m ℚ.- seq y m ∣ ≤⟨ ℚP.+-monoʳ-≤ (seq x m) (ℚP.neg-mono-≤ (p≤∣p∣ (seq x m ℚ.- seq y m))) ⟩
           seq x m ℚ.- (seq x m ℚ.- seq y m)     ≈⟨ solve 2 (λ xₘ yₘ -> (xₘ ⊖ (xₘ ⊖ yₘ)) ⊜ yₘ) ℚP.≃-refl (seq x m) (seq y m) ⟩
           seq y m                                ∎
+{-# COMPILE AGDA2HS posCong #-}
 
 pos⇒nonNeg : ∀ {x} -> Positive x -> NonNegative x
-pos⇒nonNeg {x} posx = lemma-2-8-2-onlyif (λ @0 { (suc k₁) -> let n = suc k₁ in N , _ , λ @0 { (suc k₂) m≥N -> let m = suc k₂ in
+pos⇒nonNeg {x} posx = lemma-2-8-2-onlyif (λ @0 { (suc k₁) -> let n = suc k₁ in N :&: _ , λ @0 { (suc k₂) m≥N -> let m = suc k₂ in
                       begin
   ℚ.- (+ 1 / n) <⟨ ℚP.negative⁻¹ _ ⟩
-  0ℚᵘ           ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)           ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 1 / N       ≤⟨ proj₂ fromPosx m m≥N ⟩
   seq x m        ∎}})
   where
     open ℚP.≤-Reasoning
     @0 fromPosx : ∃0 λ (N-1 : ℕ) -> ∀ (m : ℕ) -> m ℕ.≥ suc N-1 -> seq x m ℚ.≥ + 1 / (suc N-1)
-    fromPosx = fast-lemma-2-8-1-if posx
+    fromPosx = fastLemma281If x posx
     @0 N : ℕ
     N = suc (proj₁ fromPosx)
 
 @0 posx,y⇒posx+y : ∀ {x y} -> Positive x -> Positive y -> Positive (x + y)
-posx,y⇒posx+y {x} {y} posx posy = let fromPosx = fast-lemma-2-8-1-if posx; fromPosy = fast-lemma-2-8-1-if posy
+posx,y⇒posx+y {x} {y} posx posy = let fromPosx = fastLemma281If x posx; fromPosy = fastLemma281If y posy
                                                ; N₁ = suc (proj₁ fromPosx); N₂ = suc (proj₁ fromPosy); N = N₁ ℕ.⊔ N₂ in
-                                  lemma-2-8-1-onlyif (ℕ.pred N , λ @0 { (suc k₁) m≥N -> let m = suc k₁ in begin
+                                  lemma281OnlyIf (x + y) (ℕ.pred N :&: λ @0 { (suc k₁) m≥N -> let m = suc k₁ in begin
   + 1 / N                             ≤⟨ ℚP.p≤p+q {+ 1 / N} {+ 1 / N} _ ⟩
   + 1 / N ℚ.+ + 1 / N                 ≤⟨ ℚP.+-mono-≤
                                          (q≤r⇒+p/r≤+p/q 1 N₁ N (ℕP.m≤m⊔n N₁ N₂))
@@ -1572,11 +1612,11 @@ posx,y⇒posx+y {x} {y} posx posy = let fromPosx = fast-lemma-2-8-1-if posx; fro
 
 @0 nonNegx,y⇒nonNegx+y : ∀ {x y} -> NonNegative x -> NonNegative y -> NonNegative (x + y)
 nonNegx,y⇒nonNegx+y {x} {y} nonx nony = lemma-2-8-2-onlyif (λ @0 { (suc k₁) ->
-                                        let n = suc k₁; fromNonx = fast-lemma-2-8-2-if nonx (2 ℕ.* n); fromNony = fast-lemma-2-8-2-if nony (2 ℕ.* n)
+                                        let n = suc k₁; fromNonx = fastLemma282If nonx (2 ℕ.* n); fromNony = fastLemma282If nony (2 ℕ.* n)
                                               ; Nx = proj₁ fromNonx; Ny = proj₁ fromNony; N = suc (Nx ℕ.⊔ Ny)
                                               ; Nx≤N = ℕP.≤-trans (ℕP.m≤m⊔n Nx Ny) (ℕP.n≤1+n (ℕ.pred N))
                                               ; Ny≤N = ℕP.≤-trans (ℕP.m≤n⊔m Nx Ny) (ℕP.n≤1+n (ℕ.pred N)) in
-                                        N , _ , λ @0 { (suc k₂) m≥N -> let m = suc k₂; m≤2m = ℕP.m≤n*m m {2} ℕP.0<1+n in begin
+                                        N :&: _ , λ @0 { (suc k₂) m≥N -> let m = suc k₂; m≤2m = ℕP.m≤n*m m {2} ℕP.0<1+n in begin
   ℚ.- (+ 1 / n)                               ≈⟨ ℚ.*≡* (solve 1 (λ n ->
                                                  (⊝ Κ (+ 1)) ⊗ (Κ (+ 2) ⊗ n ⊗ (Κ (+ 2) ⊗ n)) ⊜
                                                  (((⊝ Κ (+ 1)) ⊗ (Κ (+ 2) ⊗ n) ⊕ ((⊝ Κ (+ 1)) ⊗ (Κ (+ 2) ⊗ n))) ⊗ n))
@@ -1591,11 +1631,11 @@ nonNegx,y⇒nonNegx+y {x} {y} nonx nony = lemma-2-8-2-onlyif (λ @0 { (suc k₁)
 
 nonNeg-cong : ∀ {x y} -> @0 x ≃ y -> @0 NonNegative x -> NonNegative y
 nonNeg-cong {x} {y} x≃y nonx = lemma-2-8-2-onlyif λ @0 { (suc k₁) ->
-                               let n = suc k₁; fromNonx = fast-lemma-2-8-2-if nonx (2 ℕ.* n); fromx≃y = fast-equality-lemma-if x y x≃y (2 ℕ.* n)
+                               let n = suc k₁; fromNonx = fastLemma282If nonx (2 ℕ.* n); fromx≃y = fastEqualityLemmaIf x y x≃y (2 ℕ.* n)
                                       ; N₁ = proj₁ fromNonx; N₂ = proj₁ fromx≃y; N = suc (N₁ ℕ.⊔ N₂)
                                       ; N₁≤N = ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) (ℕP.n≤1+n (ℕ.pred N))
                                        ; N₂≤N = ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) (ℕP.n≤1+n (ℕ.pred N)) in
-                               N , _ , λ @0 { (suc k₂) m≥N -> let m = suc k₂ in begin
+                               N :&: _ , λ @0 { (suc k₂) m≥N -> let m = suc k₂ in begin
   ℚ.- (+ 1 / n)                               ≈⟨ ℚ.*≡* (ℤsolve 1 (λ n ->
                                                  (:- κ (+ 1)) :* (κ (+ 2) :* n :* (κ (+ 2) :* n)) :=
                                                  (((:- κ (+ 1)) :* (κ (+ 2) :* n) :+ ((:- κ (+ 1)) :* (κ (+ 2) :* n))) :* n))
@@ -1619,15 +1659,15 @@ nonNeg-cong {x} {y} x≃y nonx = lemma-2-8-2-onlyif λ @0 { (suc k₁) ->
         ; Κ     to κ
         )
 
-posx∧nonNegy⇒posx+y : ∀ {x y} -> Positive x -> @0 NonNegative y -> Positive (x + y)
-posx∧nonNegy⇒posx+y {x} {y} posx nony = let fromPosx = fast-lemma-2-8-1-if posx; N₁ = suc (proj₁ fromPosx)
-                                                     ; fromNony = fast-lemma-2-8-2-if nony (2 ℕ.* N₁)
+posxAndNonNegyThenPosxPlusy : ∀ (x y : ℝ) -> Positive x -> @0 NonNegative y -> Positive (x + y)
+posxAndNonNegyThenPosxPlusy x y posx nony = let fromPosx = fastLemma281If x posx; N₁ = suc (proj₁ fromPosx)
+                                                     ; fromNony = fastLemma282If nony (2 ℕ.* N₁)
                                                      ; N₂ = suc (proj₁ fromNony); N = 2 ℕ.* (N₁ ℕ.⊔ N₂)
                                                      ; N₁≤N = ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) (ℕP.m≤n*m (N₁ ℕ.⊔ N₂) {2} ℕP.0<1+n)
                                                      ; N₂-1≤N = ℕP.≤-trans (ℕP.≤-trans (ℕP.n≤1+n (ℕ.pred N₂)) (ℕP.m≤n⊔m N₁ N₂))
                                                                 (ℕP.m≤n*m (N₁ ℕ.⊔ N₂) {2} ℕP.0<1+n) in
                                                      
-                                        lemma-2-8-1-onlyif (ℕ.pred N , (λ @0 { (suc k₁) m≥N -> let m = suc k₁ in begin
+                                        lemma281OnlyIf (x + y) (ℕ.pred N :&: (λ @0 { (suc k₁) m≥N -> let m = suc k₁ in begin
   + 1 / N                             ≤⟨ q≤r⇒+p/r≤+p/q 1 (2 ℕ.* N₁) N (ℕP.*-monoʳ-≤ 2 (ℕP.m≤m⊔n N₁ N₂)) ⟩
   + 1 / (2 ℕ.* N₁)                    ≈⟨ ℚ.*≡* (solve 1 (λ N₁ ->
                                          Κ (+ 1) ⊗ (N₁ ⊗ (Κ (+ 2) ⊗ N₁)) ⊜
@@ -1640,6 +1680,7 @@ posx∧nonNegy⇒posx+y {x} {y} posx nony = let fromPosx = fast-lemma-2-8-1-if p
   where
     open ℚP.≤-Reasoning
     open ℤ-Solver
+{-# COMPILE AGDA2HS posxAndNonNegyThenPosxPlusy #-}
 
 @0 nonNeg∣x∣ : ∀ x -> NonNegative ∣ x ∣
 nonNeg∣x∣ x = nonNeg* (λ @0 { (suc k₁) -> let n = suc k₁ in ℚP.≤-trans (ℚP.nonPositive⁻¹ _) (ℚP.0≤∣p∣ (seq x n))})
@@ -1654,11 +1695,11 @@ nonNegx⇒∣x∣≃x {x} nonx = equality-lemma-onlyif ∣ x ∣ x partA
     partA (suc k₁) = N , partB
       where
         j = suc k₁
-        fromNonx = fast-lemma-2-8-2-if nonx (2 ℕ.* j)
+        fromNonx = fastLemma282If nonx (2 ℕ.* j)
         N = suc (proj₁ fromNonx)
 
         partB : ∀ (n : ℕ) -> n ℕ.≥ N -> ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- seq x n ∣ ℚ.≤ + 1 / j
-        partB (suc k₂) n≥N = [ left , right ]′ (ℚP.≤-total (seq x n) 0ℚᵘ)
+        partB (suc k₂) n≥N = [ left , right ]′ (ℚP.≤-total (seq x n) (+ 0 / 1))
           where
             n = suc k₂
 
@@ -1667,7 +1708,7 @@ nonNegx⇒∣x∣≃x {x} nonx = equality-lemma-onlyif ∣ x ∣ x partA
               ℚ.- (ℚ.- (+ 1 / (2 ℕ.* j))) ≈⟨ ℚP.neg-involutive (+ 1 / (2 ℕ.* j)) ⟩
               + 1 / (2 ℕ.* j)              ∎
 
-            left : seq x n ℚ.≤ 0ℚᵘ -> ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- seq x n ∣ ℚ.≤ + 1 / j
+            left : seq x n ℚ.≤ (+ 0 / 1) -> ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- seq x n ∣ ℚ.≤ + 1 / j
             left hyp = begin
               ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- seq x n ∣         ≈⟨ ℚP.0≤p⇒∣p∣≃p (ℚP.p≤q⇒0≤q-p (p≤∣p∣ (seq x n))) ⟩
               ℚ.∣ seq x n ∣ ℚ.- seq x n               ≈⟨ ℚP.+-congˡ (ℚ.- seq x n) (ℚP.≃-sym (ℚP.∣-p∣≃∣p∣ (seq x n))) ⟩
@@ -1679,12 +1720,12 @@ nonNegx⇒∣x∣≃x {x} nonx = equality-lemma-onlyif ∣ x ∣ x partA
                                                          refl (+ j)) ⟩
               + 1 / j                                  ∎
 
-            right : 0ℚᵘ ℚ.≤ seq x n -> ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- seq x n ∣ ℚ.≤ + 1 / j
+            right : (+ 0 / 1) ℚ.≤ seq x n -> ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- seq x n ∣ ℚ.≤ + 1 / j
             right hyp = begin
               ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- seq x n ∣  ≈⟨ ℚP.0≤p⇒∣p∣≃p (ℚP.p≤q⇒0≤q-p (p≤∣p∣ (seq x n))) ⟩
               ℚ.∣ seq x n ∣ ℚ.- seq x n       ≈⟨ ℚP.+-congˡ (ℚ.- seq x n) (ℚP.0≤p⇒∣p∣≃p hyp) ⟩
               seq x n ℚ.- seq x n             ≈⟨ ℚP.+-inverseʳ (seq x n) ⟩
-              0ℚᵘ                             ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+              (+ 0 / 1)                             ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
               + 1 / j                          ∎
 
 @0 nonNegx,y⇒nonNegx*y : ∀ {x y} -> NonNegative x -> NonNegative y -> NonNegative (x * y)
@@ -1697,12 +1738,9 @@ nonNegx,y⇒nonNegx*y {x} {y} nonx nony = nonNeg-cong lem (nonNeg∣x∣ (x * y)
       ∣ x ∣ * ∣ y ∣ ≈⟨ *-cong (nonNegx⇒∣x∣≃x nonx) (nonNegx⇒∣x∣≃x nony) ⟩
       x * y          ∎
 
-posx,y⇒posx*y : ∀ {x y} -> Positive x -> Positive y -> Positive (x * y)
-posx,y⇒posx*y {x} {y} posx posy = let k = K x ℕ.⊔ K y; fromPosx = fast-lemma-2-8-1-if posx; fromPosy = fast-lemma-2-8-1-if posy
-                                        ; N₁ = suc (proj₁ fromPosx); N₂ = suc (proj₁ fromPosy); N = N₁ ℕ.⊔ N₂
-                                        ; N₁≤N² = ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) (ℕP.m≤n*m N {N} ℕP.0<1+n)
-                                        ; N₂≤N² = ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) (ℕP.m≤n*m N {N} ℕP.0<1+n) in
-                                  lemma-2-8-1-onlyif (ℕ.pred (N ℕ.* N) , λ @0 {(suc k₁) m≥N² ->
+posxAndyThenPosxTimesy : ∀ (x y : ℝ) -> Positive x -> Positive y -> Positive (x * y)
+posxAndyThenPosxTimesy x y posx posy = let k = fK x ℕ.⊔ fK y; fromPosx = fastLemma281If x posx; fromPosy = fastLemma281If y posy; N₁ = suc (proj₁ fromPosx); N₂ = suc (proj₁ fromPosy); N = N₁ ℕ.⊔ N₂; N₁≤N² = ℕP.≤-trans (ℕP.m≤m⊔n N₁ N₂) (ℕP.m≤n*m N {N} ℕP.0<1+n); N₂≤N² = ℕP.≤-trans (ℕP.m≤n⊔m N₁ N₂) (ℕP.m≤n*m N {N} ℕP.0<1+n) in
+                                  lemma281OnlyIf (x * y) (ℕ.pred (N ℕ.* N) :&: λ @0 {(suc k₁) m≥N² ->
                                   let m = suc k₁; N²≤2km = ℕP.≤-trans m≥N² (ℕP.m≤n*m m {2 ℕ.* k} ℕP.0<1+n) in begin
   + 1 / N ℚ.* (+ 1 / N)                           ≤⟨ q≤r⇒+p/r≤+p/q 1 (N₁ ℕ.* N₂) (N ℕ.* N) (ℕP.*-mono-≤ (ℕP.m≤m⊔n N₁ N₂) (ℕP.m≤n⊔m N₁ N₂)) ⟩
   + 1 / N₁ ℚ.* (+ 1 / N₂)                         ≤⟨ ℚ-*-mono-≤ _ _
@@ -1710,10 +1748,11 @@ posx,y⇒posx*y {x} {y} posx posy = let k = K x ℕ.⊔ K y; fromPosx = fast-lem
                                                      (proj₂ fromPosy (2 ℕ.* k ℕ.* m) (ℕP.≤-trans N₂≤N² N²≤2km)) ⟩
   seq x (2 ℕ.* k ℕ.* m) ℚ.* seq y (2 ℕ.* k ℕ.* m)  ∎})
   where open ℚP.≤-Reasoning
+{-# COMPILE AGDA2HS posxAndyThenPosxTimesy #-}
 
 @0 posx⇒posx⊔y : ∀ {x y} -> Positive x -> Positive (x ⊔ y)
-posx⇒posx⊔y {x} {y} posx = let fromPosx = fast-lemma-2-8-1-if posx; N = suc (proj₁ fromPosx) in
-                           lemma-2-8-1-onlyif (ℕ.pred N , λ @0 {(suc k₁) m≥N -> let m = suc k₁ in begin
+posx⇒posx⊔y {x} {y} posx = let fromPosx = fastLemma281If x posx; N = suc (proj₁ fromPosx) in
+                           lemma281OnlyIf (x ⊔ y) (ℕ.pred N :&: λ @0 {(suc k₁) m≥N -> let m = suc k₁ in begin
   + 1 / N             ≤⟨ proj₂ fromPosx m m≥N ⟩
   seq x m             ≤⟨ ℚP.p≤p⊔q (seq x m) (seq y m) ⟩
   seq x m ℚ.⊔ seq y m  ∎})
@@ -1721,9 +1760,9 @@ posx⇒posx⊔y {x} {y} posx = let fromPosx = fast-lemma-2-8-1-if posx; N = suc 
 
 @0 nonNegx⇒nonNegx⊔y : ∀ {x y} -> NonNegative x -> NonNegative (x ⊔ y)
 nonNegx⇒nonNegx⊔y {x} {y} nonx = lemma-2-8-2-onlyif (λ @0 {(suc k₁) ->
-                                 let n = suc k₁; fromNonx = fast-lemma-2-8-2-if nonx n
+                                 let n = suc k₁; fromNonx = fastLemma282If nonx n
                                        ; N = proj₁ fromNonx in
-                                 N , proj₁ (proj₂ fromNonx) , λ m m≥N -> begin
+                                 N :&: proj₁ (proj₂ fromNonx) , λ m m≥N -> begin
   ℚ.- (+ 1 / n)       ≤⟨ proj₂ (proj₂ fromNonx) m m≥N ⟩
   seq x m             ≤⟨ ℚP.p≤p⊔q (seq x m) (seq y m) ⟩
   seq x m ℚ.⊔ seq y m  ∎})
@@ -1733,13 +1772,13 @@ nonNegx⇒nonNegx⊔y {x} {y} nonx = lemma-2-8-2-onlyif (λ @0 {(suc k₁) ->
 nonNegx,y⇒nonNegx⊓y {x} {y} nonx nony = lemma-2-8-2-onlyif partA
   where
     open ℚP.≤-Reasoning
-    partA : (n : ℕ) {n≢0 : n ≢0} → ∃0 (λ Nₙ → Nₙ ≢0 × ((m : ℕ) → m ℕ.≥ Nₙ → seq (x ⊓ y) m ℚ.≥ ℚ.- (+ 1 / n)))
-    partA (suc k₁) = N , _ , partB
+    partA : (n : ℕ) {@0 n≢0 : n ≢0} → ∃0 (λ Nₙ → Nₙ ≢0 × ((m : ℕ) → m ℕ.≥ Nₙ → seq (x ⊓ y) m ℚ.≥ ℚ.- (+ 1 / n)))
+    partA (suc k₁) = N :&: _ , partB
       where
         n = suc k₁
-        fromNonx = fast-lemma-2-8-2-if nonx n
+        fromNonx = fastLemma282If nonx n
         Nx = proj₁ fromNonx
-        fromNony = fast-lemma-2-8-2-if nony n
+        fromNony = fastLemma282If nony n
         Ny = proj₁ fromNony
         N = suc (Nx ℕ.⊔ Ny)
         Nx≤N = ℕP.≤-trans (ℕP.m≤m⊔n Nx Ny) (ℕP.n≤1+n (ℕ.pred N))
@@ -1761,12 +1800,12 @@ nonNegx,y⇒nonNegx⊓y {x} {y} nonx nony = lemma-2-8-2-onlyif partA
               seq x m ℚ.⊓ seq y m  ∎
 
 @0 posx,y⇒posx⊓y : ∀ x y -> Positive x -> Positive y -> Positive (x ⊓ y)
-posx,y⇒posx⊓y x y posx posy = lemma-2-8-1-onlyif (ℕ.pred N , lem)
+posx,y⇒posx⊓y x y posx posy = lemma281OnlyIf (x ⊓ y) (ℕ.pred N :&: lem)
   where
     open ℚP.≤-Reasoning
-    fromPosx = fast-lemma-2-8-1-if posx
+    fromPosx = fastLemma281If x posx
     Nx = suc (proj₁ fromPosx)
-    fromPosy = fast-lemma-2-8-1-if posy
+    fromPosy = fastLemma281If y posy
     Ny = suc (proj₁ fromPosy)
     N = Nx ℕ.⊔ Ny
     Nx≤N = ℕP.m≤m⊔n Nx Ny
@@ -1790,14 +1829,13 @@ posx,y⇒posx⊓y x y posx posy = lemma-2-8-1-onlyif (ℕ.pred N , lem)
           seq x m ℚ.⊓ seq y m   ∎
 
 @0 neg-cong : ∀ {x y} -> x ≃ y -> Negative x -> Negative y
-neg-cong x≃y negx = pos-cong (-‿cong x≃y) negx
+neg-cong {x} {y} x≃y negx = posCong (negate x) (negate y) (-‿cong x≃y) negx
 
-@0 nonNeg0 : NonNegative 0ℝ
+@0 nonNeg0 : NonNegative zeroℝ
 nonNeg0 = nonNeg* (λ {(suc k₁) -> ℚP.<⇒≤ (ℚP.negative⁻¹ _)})
 
 @0 nonNeg-refl : ∀ {x} -> NonNegative (x - x)
-nonNeg-refl {x} = nonNeg-cong (≃-symm (+-inverseʳ x)) nonNeg0
-
+nonNeg-refl {x} = nonNeg-cong (≃-sym (+-inverseʳ x)) nonNeg0
 
 -- The ℝ Solver
 -- Use this to solve real number ring equations
@@ -1809,7 +1847,7 @@ module ℝ-Solver where
   open import Data.Maybe.Base using (nothing)
 
   ℚ-isZero : ℚᵘ -> Bool
-  ℚ-isZero p with p ℚP.≃? 0ℚᵘ
+  ℚ-isZero p with p ℚP.≃? (+ 0 / 1)
   ... | .true because ofʸ p₁ = true
   ... | .false because ofⁿ ¬p = false
 
@@ -1837,8 +1875,8 @@ module ℝ-Solver where
     ; 1-homo = ≃-refl
     }
 
-  zero-checker : ∀ p -> T (ℚ-isZero p) -> 0ℝ ≃ p ⋆
-  zero-checker p hyp with p ℚP.≃? 0ℚᵘ
+  zero-checker : ∀ p -> T (ℚ-isZero p) -> zeroℝ ≃ p ⋆
+  zero-checker p hyp with p ℚP.≃? (+ 0 / 1)
   ... | .true because ofʸ p₁ = ⋆-cong (ℚP.≃-sym p₁)
 
   homo : Homomorphism _ _ _ _
@@ -1872,7 +1910,7 @@ xⁿxᵐ≃xⁿ⁺ᵐ x (suc n) m = begin
 
 -- Properties of _<_, _≤_, etc
 
-<⇒≤ : _<_ ⇒ _≤_
+@0 <⇒≤ : {x y : ℝ} → x < y → x ≤ y
 <⇒≤ {x} {y} x<y = pos⇒nonNeg x<y
 
 -- Helper lemmas often used in the next few order property proofs
@@ -1885,21 +1923,30 @@ private
   z-x+t-y≃z+t-x+y {x} {y} {z} {t} = solve 4 (λ x y z t -> ((z ⊖ x) ⊕ (t ⊖ y)) ⊜ ((z ⊕ t) ⊖ (x ⊕ y))) ≃-refl x y z t
     where open ℝ-Solver
 
--- when ≤ is erased but < is not, and we have to create a non-erased <:
-<-≤0-trans : {x y z : ℝ} → x < y → @0 y ≤ z → x < z
-<-≤0-trans {x} {y} {z} x<y y≤z = pos-cong (≃-trans (+-comm (y - x) (z - y)) z-y+y-x≃z-x) (posx∧nonNegy⇒posx+y x<y y≤z)
+-- When ≤ is erased but < is not, and we have to create a non-erased <:
+ltLe0Trans : (x y z : ℝ) → x < y → @0 y ≤ z → x < z
+ltLe0Trans x y z xLty y≤z = posCong ((y - x) + (z - y)) (z - x) (≃-trans (+-comm (y - x) (z - y)) z-y+y-x≃z-x) (posxAndNonNegyThenPosxPlusy (y - x) (z - y) xLty y≤z)
+{-# COMPILE AGDA2HS ltLe0Trans #-}
 
-≤0-<-trans : {x y z : ℝ} → @0 x ≤ y → y < z → x < z
-≤0-<-trans {x} {y} {z} x≤y y<z = pos-cong z-y+y-x≃z-x (posx∧nonNegy⇒posx+y y<z x≤y)
+-- Similarly.
+le0LtTrans : (x y z : ℝ) → @0 x ≤ y → y < z → x < z
+le0LtTrans x y z x≤y yLtz = posCong ((z - y) + (y - x)) (z - x)
+                                   z-y+y-x≃z-x (posxAndNonNegyThenPosxPlusy (z - y) (y - x) yLtz x≤y)
+{-# COMPILE AGDA2HS le0LtTrans #-}
 
+{-
 <-≤-trans : Trans _<_ _≤_ _<_
 <-≤-trans x<y y≤z = <-≤0-trans x<y y≤z
 
 ≤-<-trans : Trans _≤_ _<_ _<_
 ≤-<-trans x≤y y<z = ≤0-<-trans x≤y y<z
+-}
 
-<-trans : Transitive _<_
-<-trans = ≤-<-trans ∘ <⇒≤
+-- Has to be compilable.
+ltTrans : (x y z : ℝ) → @0 (x < y) → y < z → x < z
+ltTrans x y z xLty yLtz = posCong ((z - y) + (y - x)) (z - x)
+                           z-y+y-x≃z-x (posxAndNonNegyThenPosxPlusy (z - y) (y - x) yLtz (<⇒≤ xLty))
+{-# COMPILE AGDA2HS ltTrans #-}
 
 ≤-trans : Transitive _≤_
 ≤-trans {x} {y} {z} x≤y y≤z = nonNeg-cong z-y+y-x≃z-x (nonNegx,y⇒nonNegx+y y≤z x≤y)
@@ -1913,15 +1960,18 @@ private
 @0 +-monoˡ-≤ : ∀ (x : ℝ) -> (_+ x) Preserves _≤_ ⟶ _≤_
 +-monoˡ-≤ x y≤z = +-mono-≤ y≤z nonNeg-refl
 
-@0 +-mono-< : _+_ Preserves₂ _<_ ⟶ _<_ ⟶ _<_
-+-mono-< x<z y<t = pos-cong z-x+t-y≃z+t-x+y (posx,y⇒posx+y x<z y<t)
+@0 +-mono-< : ∀ {x z y t : ℝ} → x < z → y < t → x + y < z + t -- _+_ Preserves₂ _<_ ⟶ _<_ ⟶ _<_
++-mono-< {x} {z} {y} {t} x<z y<t = posCong ((z - x) + (t - y)) ((z + t) - (x + y))
+                    z-x+t-y≃z+t-x+y (posx,y⇒posx+y x<z y<t)
 
-@0 +-monoʳ-< : ∀ x -> (_+_ x) Preserves _<_ ⟶ _<_
-+-monoʳ-< x {y} {z} y<z = pos-cong (solve 3 (λ x y z -> (z ⊖ y) ⊜ (x ⊕ z ⊖ (x ⊕ y))) ≃-refl x y z) y<z
+@0 +-monoʳ-< : ∀ (x : ℝ) {y z : ℝ} → y < z → x + y < x + z -- ∀ x → (_+_ x) Preserves _<_ ⟶ _<_
++-monoʳ-< x {y} {z} y<z = posCong (z - y) (x + z - (x + y))
+                           (solve 3 (λ x y z -> (z ⊖ y) ⊜ (x ⊕ z ⊖ (x ⊕ y))) ≃-refl x y z) y<z
   where open ℝ-Solver
 
-@0 +-monoˡ-< : ∀ x → (_+ x) Preserves _<_ ⟶ _<_
-+-monoˡ-< x {y} {z} y<z = pos-cong (+-cong (+-comm x z) (-‿cong (+-comm x y))) (+-monoʳ-< x y<z)
+@0 +-monoˡ-< : ∀ (x : ℝ) {y z : ℝ} → y < z → y + x < z + x -- ∀ x → (_+ x) Preserves _<_ ⟶ _<_
++-monoˡ-< x {y} {z} y<z = posCong ((x + z) - (x + y)) (z + x - (y + x))
+                           (+-cong (+-comm x z) (-‿cong (+-comm x y))) (+-monoʳ-< x y<z)
 
 ≤-reflexive : _≃_ ⇒ _≤_
 ≤-reflexive {x} x≃y = nonNeg-cong (+-congˡ (- x) x≃y) nonNeg-refl
@@ -1936,40 +1986,52 @@ private
   ; trans         = ≤-trans
   }
 
-≤-respʳ-≃ : _≤_ Respectsʳ _≃_
+@0 ≤-respʳ-≃ : _≤_ Respectsʳ _≃_
 ≤-respʳ-≃ {x} {y} {z} y≃z x≤y = nonNeg-cong (+-congˡ (- x) y≃z) x≤y
 
-≤-respˡ-≃ : _≤_ Respectsˡ _≃_
+@0 ≤-respˡ-≃ : _≤_ Respectsˡ _≃_
 ≤-respˡ-≃ {x} {y} {z} y≃z y≤x = nonNeg-cong (+-congʳ x (-‿cong y≃z)) y≤x
 
 -- when we work with erased ≃ and would like a non-erased <:
+-- again a compilable version
+ltRespREq : (x y z : ℝ) → @0 y ≃ z → x < y → x < z
+ltRespREq x y z y≃z xLty = ltLe0Trans x y z xLty (≤-reflexive y≃z)
+{-# COMPILE AGDA2HS ltRespREq #-}
 
-<-respʳ-≃0 : {x y z : ℝ} → @0 y ≃ z → x < y → x < z
-<-respʳ-≃0 y≃z x<y = <-≤0-trans x<y (≤-reflexive y≃z)
+ltRespLEq : (x y z : ℝ) → @0 y ≃ z → x > y → x > z
+ltRespLEq x y z y≃z xGty = le0LtTrans z y x (≤-reflexive (≃-sym y≃z)) xGty
+{-# COMPILE AGDA2HS ltRespLEq #-}
 
-<-respˡ-≃0 : {x y z : ℝ} → @0 y ≃ z → x > y → x > z
-<-respˡ-≃0 y≃z x>y = ≤0-<-trans (≤-reflexive (≃-symm y≃z)) x>y
-
+{-
 <-respʳ-≃ : _<_ Respectsʳ _≃_
-<-respʳ-≃ y≃z x<y = <-respʳ-≃0 y≃z x<y
+<-respʳ-≃ y≃z x<y = ≤-respʳ-≃0 y≃z x<y
 
 <-respˡ-≃ : _<_ Respectsˡ _≃_
 <-respˡ-≃ y≃z x>y = <-respˡ-≃0 y≃z x>y
 
 <-resp-≃ : _<_ Respects₂ _≃_
 <-resp-≃ = <-respʳ-≃ , <-respˡ-≃
+-}
 
 -- sadly, we cannot put versions with erased arguments here;
 -- so we cannot use ≤-Reasoning if we work with erased ≃ or ≤ and want a non-erased <
 
 module ≤-Reasoning where
-  open import Relation.Binary.Reasoning.Base.Triple
-    ≤-isPreorder
-    <-trans
-    <-resp-≃
+  open import TripleReasoning {Level.zero} {Level.zero} {Level.zero} {Level.zero} {ℝ}
+    {_≃_}
+    {_≤_}
+    {_<_}
+    ≃-refl
+    ≃-sym
+    ≃-trans
+    ≤-reflexive
+    ≤-trans 
+    ltTrans
+    ltRespREq
+    ltRespLEq
     <⇒≤
-    <-≤-trans 
-    ≤-<-trans
+    ltLe0Trans
+    le0LtTrans
     public
 
 @0 *-monoʳ-≤-nonNeg : ∀ {x y z} -> x ≤ z -> NonNegative y -> x * y ≤ z * y
@@ -1986,28 +2048,32 @@ module ≤-Reasoning where
   y * z  ∎
   where open ≤-Reasoning
 
-*-monoʳ-<-pos : ∀ {y} -> Positive y -> (_*_ y) Preserves _<_ ⟶ _<_
-*-monoʳ-<-pos {y} posy {x} {z} x<z = pos-cong
+multiMonoRLtPos : ∀ (y : ℝ) → Positive y → (x z : ℝ) → x < z → y * x < y * z -- ∀ {y} -> Positive y -> (_*_ y) Preserves _<_ ⟶ _<_
+multiMonoRLtPos y posy x z xLtz = posCong (y * (z - x)) (y * z - y * x)
                                      (solve 3 (λ x y z -> (y ⊗ (z ⊖ x)) ⊜ (y ⊗ z ⊖ y ⊗ x)) ≃-refl x y z)
-                                     (posx,y⇒posx*y posy x<z)
+                                     (posxAndyThenPosxTimesy y (z - x) posy xLtz)
   where open ℝ-Solver
+{-# COMPILE AGDA2HS multiMonoRLtPos #-}
 
-
-*-monoˡ-<-pos : ∀ {y} -> Positive y -> (_* y) Preserves _<_ ⟶ _<_
-*-monoˡ-<-pos {y} posy {x} {z} x<z = begin-strict
+multiMonoLLtPos : ∀ (y : ℝ) → Positive y → (x z : ℝ) → x < z → x * y < z * y  -- ∀ {y} -> Positive y -> (_* y) Preserves _<_ ⟶ _<_
+multiMonoLLtPos y posy x z xLtz = ltRespLEq (z * y) (y * x) (x * y) (*-comm y x)
+                                    (ltRespREq (y * x) (y * z) (z * y) (*-comm y z)
+                                      (multiMonoRLtPos y posy x z xLtz))
+ {-begin-strict
   x * y ≈⟨ *-comm x y ⟩
-  y * x <⟨ *-monoʳ-<-pos posy x<z ⟩
+  y * x <⟨ multiMonoRLtPos y posy x z xLtz ⟩
   y * z ≈⟨ *-comm y z ⟩
   z * y  ∎
   where
-    open ≤-Reasoning
+    open ≤-Reasoning-}
+{-# COMPILE AGDA2HS multiMonoLLtPos #-}
 
-neg-mono-< : -_ Preserves _<_ ⟶ _>_
-neg-mono-< {x} {y} x<y = pos-cong
+negMonoLt : (x y : ℝ) → x < y → negate x > negate y
+negMonoLt x y xLty = posCong (y - x) (negate x - negate y)
                          (solve 2 (λ x y -> (y ⊖ x) ⊜ (⊝ x ⊖ (⊝ y))) ≃-refl x y)
-                         x<y
+                         xLty
   where open ℝ-Solver
-
+{-# COMPILE AGDA2HS negMonoLt #-}
 
 @0 neg-mono-≤ : -_ Preserves _≤_ ⟶ _≥_
 neg-mono-≤ {x} {y} x≤y = nonNeg-cong
@@ -2018,7 +2084,7 @@ neg-mono-≤ {x} {y} x≤y = nonNeg-cong
 @0 x≤x⊔y : ∀ x y -> x ≤ x ⊔ y
 x≤x⊔y x y = nonNeg* (λ {(suc k₁) -> let n = suc k₁ in begin (
   ℚ.- (+ 1 / n)                                           ≤⟨ ℚP.nonPositive⁻¹ _ ⟩
-  0ℚᵘ                                                     ≈⟨ ℚP.≃-sym (ℚP.+-inverseʳ (seq x (2 ℕ.* n))) ⟩
+  (+ 0 / 1)                                                     ≈⟨ ℚP.≃-sym (ℚP.+-inverseʳ (seq x (2 ℕ.* n))) ⟩
   seq x (2 ℕ.* n) ℚ.- seq x (2 ℕ.* n)                     ≤⟨ ℚP.+-monoˡ-≤ (ℚ.- seq x (2 ℕ.* n)) (ℚP.p≤p⊔q (seq x (2 ℕ.* n)) (seq y (2 ℕ.* n))) ⟩
   seq x (2 ℕ.* n) ℚ.⊔ seq y (2 ℕ.* n) ℚ.- seq x (2 ℕ.* n)  ∎)})
   where open ℚP.≤-Reasoning
@@ -2034,7 +2100,7 @@ x≤y⊔x x y = begin
 @0 x⊓y≤x : ∀ x y -> x ⊓ y ≤ x
 x⊓y≤x x y = nonNeg* λ {(suc k₁) -> let n = suc k₁ in begin 
       ℚ.- (+ 1 / n)                             ≤⟨ ℚP.nonPositive⁻¹ _ ⟩
-      0ℚᵘ                                       ≈⟨ ℚP.≃-sym (ℚP.+-inverseʳ (seq x (2 ℕ.* n))) ⟩ 
+      (+ 0 / 1)                                       ≈⟨ ℚP.≃-sym (ℚP.+-inverseʳ (seq x (2 ℕ.* n))) ⟩ 
       seq x (2 ℕ.* n) ℚ.- seq x (2 ℕ.* n)       ≤⟨ ℚP.+-monoʳ-≤ (seq x (2 ℕ.* n)) (ℚP.neg-mono-≤ (ℚP.p⊓q≤p (seq x (2 ℕ.* n)) (seq y (2 ℕ.* n)))) ⟩
       seq x (2 ℕ.* n) ℚ.- seq (x ⊓ y) (2 ℕ.* n) ∎}
   where open ℚP.≤-Reasoning
@@ -2048,11 +2114,11 @@ x⊓y≤y x y = begin
     open ≤-Reasoning
 
 @0 ≤-antisym : Antisymmetric _≃_ _≤_
-≤-antisym {x} {y} (nonNeg* x≤y) (nonNeg* y≤x) = ≃-symm partB
+≤-antisym {x} {y} (nonNeg* x≤y) (nonNeg* y≤x) = ≃-sym partB
   where
-    partA : ∀ (n : ℕ) -> {n≢0 : n ≢0} -> ℚ.∣ seq (x - y) n ℚ.- 0ℚᵘ ∣ ℚ.≤ (+ 2 / n) {n≢0}
+    partA : ∀ (n : ℕ) -> {n≢0 : n ≢0} -> ℚ.∣ seq (x - y) n ℚ.- (+ 0 / 1) ∣ ℚ.≤ (+ 2 / n) {n≢0}
     partA (suc k₁) = begin
-      ℚ.∣ seq x (2 ℕ.* n) ℚ.- seq y (2 ℕ.* n) ℚ.- 0ℚᵘ ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-identityʳ (seq x (2 ℕ.* n) ℚ.- seq y (2 ℕ.* n))) ⟩
+      ℚ.∣ seq x (2 ℕ.* n) ℚ.- seq y (2 ℕ.* n) ℚ.- (+ 0 / 1) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-identityʳ (seq x (2 ℕ.* n) ℚ.- seq y (2 ℕ.* n))) ⟩
       ℚ.∣ seq x (2 ℕ.* n) ℚ.- seq y (2 ℕ.* n) ∣         ≤⟨ [ left , right ]′ (ℚP.≤-total (seq x (2 ℕ.* n)) (seq y (2 ℕ.* n))) ⟩
       + 2 / n                                            ∎
       where
@@ -2078,86 +2144,119 @@ x⊓y≤y x y = begin
 
     partB : y ≃ x
     partB = begin
-      y             ≈⟨ ≃-symm (+-identityʳ y) ⟩
-      y + 0ℝ        ≈⟨ +-congʳ y (≃-symm (*≃* partA)) ⟩
+      y             ≈⟨ ≃-sym (+-identityʳ y) ⟩
+      y + zeroℝ        ≈⟨ +-congʳ y (≃-sym (*≃* partA)) ⟩
       y + (x - y)   ≈⟨ +-congʳ y (+-comm x (- y)) ⟩
-      y + (- y + x) ≈⟨ ≃-symm (+-assoc y (- y) x) ⟩
+      y + (- y + x) ≈⟨ ≃-sym (+-assoc y (- y) x) ⟩
       y - y + x     ≈⟨ +-congˡ x (+-inverseʳ y) ⟩
-      0ℝ + x        ≈⟨ +-identityˡ x ⟩
+      zeroℝ + x        ≈⟨ +-identityˡ x ⟩
       x              ∎
       where open ≃-Reasoning
 
-0≃-0 : 0ℝ ≃ - 0ℝ
-0≃-0 = ⋆-distrib-neg 0ℚᵘ
+@0 0≃-0 : zeroℝ ≃ - zeroℝ
+0≃-0 = ⋆-distrib-neg (+ 0 / 1)
 
 private
   -- Helper for the next few proofs
-  x-0≃x : ∀ {x} -> x - 0ℝ ≃ x
-  x-0≃x {x} = ≃-trans (+-congʳ x (≃-symm 0≃-0)) (+-identityʳ x)
+  @0 x-0≃x : ∀ {x} -> x - zeroℝ ≃ x
+  x-0≃x {x} = ≃-trans (+-congʳ x (≃-sym 0≃-0)) (+-identityʳ x)
 
-0<x⇒posx : ∀ {x} -> 0ℝ < x -> Positive x
-0<x⇒posx {x} 0<x = pos-cong x-0≃x 0<x
+zeroLtxThenPosx : ∀ (x : ℝ) -> zeroℝ < x -> Positive x
+zeroLtxThenPosx x zeroLtx = posCong (x - zeroℝ) x x-0≃x zeroLtx
+{-# COMPILE AGDA2HS zeroLtxThenPosx #-}
 
-posx⇒0<x : ∀ {x} -> Positive x -> 0ℝ < x
-posx⇒0<x {x} posx = pos-cong (≃-symm x-0≃x) posx
+posxThenZeroLtx : ∀ (x : ℝ) -> Positive x -> zeroℝ < x
+posxThenZeroLtx x posx = posCong x (x - zeroℝ) (≃-sym x-0≃x) posx
+{-# COMPILE AGDA2HS posxThenZeroLtx #-}
 
-@0 0≤x⇒nonNegx : ∀ {x} -> 0ℝ ≤ x -> NonNegative x
+@0 0≤x⇒nonNegx : ∀ {x} -> zeroℝ ≤ x -> NonNegative x
 0≤x⇒nonNegx {x} 0≤x = nonNeg-cong x-0≃x 0≤x
 
-@0 nonNegx⇒0≤x : ∀ {x} -> NonNegative x -> 0ℝ ≤ x
-nonNegx⇒0≤x {x} nonx = nonNeg-cong (≃-symm x-0≃x) nonx
+@0 nonNegx⇒0≤x : ∀ {x} -> NonNegative x -> zeroℝ ≤ x
+nonNegx⇒0≤x {x} nonx = nonNeg-cong (≃-sym x-0≃x) nonx
 
-x<0⇒negx : ∀ {x} -> x < 0ℝ -> Negative x
-x<0⇒negx {x} x<0 = pos-cong (+-identityˡ (- x)) x<0
+xLtZeroThenNegx : ∀ (x : ℝ) -> x < zeroℝ -> Negative x
+xLtZeroThenNegx x xLt0 = posCong (zeroℝ + negate x) (negate x) (+-identityˡ (- x)) xLt0
+{-# COMPILE AGDA2HS xLtZeroThenNegx #-}
 
-negx⇒x<0 : ∀ {x} -> Negative x -> x < 0ℝ
-negx⇒x<0 {x} negx = pos-cong (≃-symm (+-identityˡ (- x))) negx
+negxThenxLtZero : ∀ (x : ℝ) -> Negative x -> x < zeroℝ
+negxThenxLtZero x negx = posCong (negate x) (zeroℝ + negate x) (≃-sym (+-identityˡ (- x))) negx
+{-# COMPILE AGDA2HS negxThenxLtZero #-}
 
-0<y-x⇒x<y : ∀ x y -> 0ℝ < y - x -> x < y
-0<y-x⇒x<y x y 0<y-x = pos-cong (≃-trans (+-congʳ (y - x) (≃-symm 0≃-0)) (+-identityʳ (y - x))) 0<y-x
+zeroLtxMinusxThenxLty : ∀ x y -> zeroℝ < y - x -> x < y
+zeroLtxMinusxThenxLty x y zeroLtyMx = posCong (y - x - zeroℝ) (y - x) (≃-trans (+-congʳ (y - x) (≃-sym 0≃-0)) (+-identityʳ (y - x))) zeroLtyMx
+{-# COMPILE AGDA2HS zeroLtxMinusxThenxLty #-}
 
-x<y⇒0<y-x : ∀ x y -> x < y -> 0ℝ < y - x
-x<y⇒0<y-x x y x<y = pos-cong (≃-trans (≃-symm (+-identityʳ (y - x))) (+-congʳ (y - x) 0≃-0)) x<y
+xLtyThenZeroLtyMinusx : ∀ x y -> x < y -> zeroℝ < y - x
+xLtyThenZeroLtyMinusx x y xLty = posCong (y - x) (y - x - zeroℝ) (≃-trans (≃-sym (+-identityʳ (y - x))) (+-congʳ (y - x) 0≃-0)) xLty
+{-# COMPILE AGDA2HS xLtyThenZeroLtyMinusx #-}
 
-⋆-distrib-to-p⋆-q⋆ : ∀ p q -> (p ℚ.- q) ⋆ ≃ p ⋆ - (q ⋆)
+@0 ⋆-distrib-to-p⋆-q⋆ : ∀ p q -> (p ℚ.- q) ⋆ ≃ p ⋆ - (q ⋆)
 ⋆-distrib-to-p⋆-q⋆ p q = solve 0 (Κ (p ℚ.- q) ⊜ (Κ p ⊖ Κ q)) ≃-refl
   where open ℝ-Solver
 
-0<p⇒0<p⋆ : ∀ p -> @0 ℚ.Positive p -> Positive (p ⋆)
-0<p⇒0<p⋆ (mkℚᵘ +[1+ p ] q-1) posp/q = let q = suc q-1 in pos* (q , ℚ.*<* (begin-strict
+-- For unpacking the sigma from a Positive proof.
+@0 unpackSigmaFromPos : ∀ {x} → Positive x → Σ0 ℕ (λ (n-1 : ℕ) -> seq x (suc n-1) ℚ.> + 1 / (suc n-1))
+unpackSigmaFromPos (MkPos s) = s
+
+-- this pattern matching won't end well...
+zeroLtpThenZeroLtToRealp : ∀ p -> @0 ℚ.Positive p -> Positive (toReal p)
+zeroLtpThenZeroLtToRealp (mkℚᵘ +[1+ p ] q-1) _ = let q = suc q-1 in MkPos (q :&: ℚ.*<* (begin-strict
   + 1 ℤ.* + q          ≡⟨ ℤP.*-identityˡ (+ q) ⟩
   + q                  <⟨ ℤ.+<+ (ℕP.n<1+n q) ⟩
   + suc q              ≤⟨ ℤ.+≤+ (ℕP.m≤n*m (suc q) {suc p} ℕP.0<1+n) ⟩
   +[1+ p ] ℤ.* + suc q  ∎))
   where open ℤP.≤-Reasoning
 
-p<q⇒p⋆<q⋆ : ∀ p q -> @0 p ℚ.< q -> p ⋆ < q ⋆
-p<q⇒p⋆<q⋆ p q p<q = pos-cong (⋆-distrib-to-p⋆-q⋆ q p) (0<p⇒0<p⋆ (q ℚ.- p) (ℚ.positive (p<q⇒0<q-p p q p<q)))
+-- therefore:
+zeroLtpThenZeroLtToRealp' : ∀ p -> @0 ℚ.Positive p -> Positive (toReal p)
+zeroLtpThenZeroLtToRealp' a posa = MkPos (q :&: finalProof)
+  where
+  q : ℕ
+  q = suc (denominator-1 a)
 
-∣-x∣≃∣x∣ : ∀ {x} -> ∣ - x ∣ ≃ ∣ x ∣
+  -- we use the proof from the previous one
+  @0 posa⋆ : Positive (toReal a)
+  posa⋆ = zeroLtpThenZeroLtToRealp a posa
+  @0 qIsTheOne : ∀ p -> (@0 posp : ℚ.Positive p) -> proj₁ (unpackSigmaFromPos (zeroLtpThenZeroLtToRealp p posp)) ≡ suc (denominator-1 p)
+  qIsTheOne (mkℚᵘ +[1+ p ] q-1) _ = refl
+  @0 finalProof : seq (toReal a) (suc q) ℚ.> + 1 / (suc q)
+  finalProof = subst (λ (n-1 : ℕ) -> seq (toReal a) (suc n-1) ℚ.> + 1 / (suc n-1)) (qIsTheOne a posa) (proj₂ (unpackSigmaFromPos posa⋆))
+{-# COMPILE AGDA2HS zeroLtpThenZeroLtToRealp' #-}
+
+proj₁zeroLtpThenZeroLtToRealp≡proj₁zeroLtpThenZeroLtToRealp' : ∀ p -> (@0 posp : ℚ.Positive p) ->
+                                            proj₁ (unpackSigmaFromPos (zeroLtpThenZeroLtToRealp p posp)) ≡ proj₁ (unpackSigmaFromPos (zeroLtpThenZeroLtToRealp' p posp))
+proj₁zeroLtpThenZeroLtToRealp≡proj₁zeroLtpThenZeroLtToRealp' (mkℚᵘ +[1+ p ] q-1) _ = refl
+
+pLtqThenToRealpLtToRealq : ∀ (p q : ℚᵘ) -> @0 p ℚ.< q -> toReal p < toReal q
+pLtqThenToRealpLtToRealq p q pLtq = posCong (toReal (q ℚ.- p)) (toReal q - toReal p)
+                                      (⋆-distrib-to-p⋆-q⋆ q p) (zeroLtpThenZeroLtToRealp (q ℚ.- p) (ℚ.positive (p<q⇒0<q-p p q pLtq)))
+{-# COMPILE AGDA2HS pLtqThenToRealpLtToRealq #-}
+
+@0 ∣-x∣≃∣x∣ : ∀ {x} -> ∣ - x ∣ ≃ ∣ x ∣
 ∣-x∣≃∣x∣ {x} = *≃* λ @0 {(suc k₁) -> let n = suc k₁ in begin
   ℚ.∣ ℚ.∣ ℚ.- seq x n ∣ ℚ.- ℚ.∣ seq x n ∣ ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congˡ (ℚ.- ℚ.∣ seq x n ∣) (ℚP.∣-p∣≃∣p∣ (seq x n))) ⟩
   ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- ℚ.∣ seq x n ∣ ∣     ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ ℚ.∣ seq x n ∣) ⟩
-  0ℚᵘ                                      ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                                      ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                                   ∎}
   where open ℚP.≤-Reasoning
 
 @0 ∣x-y∣≃∣y-x∣ : ∀ x y -> ∣ x - y ∣ ≃ ∣ y - x ∣
 ∣x-y∣≃∣y-x∣ x y = begin
-  ∣ x - y ∣     ≈⟨ ≃-symm ∣-x∣≃∣x∣ ⟩
+  ∣ x - y ∣     ≈⟨ ≃-sym ∣-x∣≃∣x∣ ⟩
   ∣ - (x - y) ∣ ≈⟨ ∣-∣-cong (solve 2 (λ x y -> (⊝ (x ⊖ y)) ⊜ (y ⊖ x)) ≃-refl x y) ⟩
   ∣ y - x ∣      ∎
   where
     open ℝ-Solver
     open ≃-Reasoning
 
-≮⇒≥ : _≮_ ⇒ _≥_
+@0 ≮⇒≥ : _≮_ ⇒ _≥_
 ≮⇒≥ {x} {y} x≮y = nonNeg* (λ {(suc k₁) -> let n = suc k₁ in
                   ℚP.≤-respʳ-≃ (solve 2 (λ x y -> (⊝ (y ⊖ x)) ⊜ (x ⊖ y)) ℚP.≃-refl (seq x (2 ℕ.* n)) (seq y (2 ℕ.* n)))
-                  (ℚP.neg-mono-≤ ([ (λ hyp -> hyp) , (λ hyp -> ⊥-elim (x≮y (pos* (k₁ , hyp)))) ]′ (≤∨> (seq (y - x) n) (+ 1 / n))))})
+                  (ℚP.neg-mono-≤ ([ (λ hyp -> hyp) , (λ hyp -> ⊥-elim (x≮y (MkPos (k₁ :&: hyp)))) ]′ (≤∨> (seq (y - x) n) (+ 1 / n))))})
   where open ℚ-Solver
 
--- Properties of _-_ and _*_
+-- Properties of _negate and _*_
 
 @0 neg-distribˡ-* : ∀ x y -> - (x * y) ≃ - x * y
 neg-distribˡ-* = solve 2 (λ x y -> (⊝ (x ⊗ y)) ⊜ ((⊝ x) ⊗ y)) ≃-refl
@@ -2169,7 +2268,7 @@ neg-distribʳ-* = solve 2 (λ x y -> (⊝ (x ⊗ y)) ⊜ (x ⊗ (⊝ y))) ≃-re
 
 -- Properties of ∣_∣ and ordering
 
-@0 0≤∣x∣ : ∀ x -> 0ℝ ≤ ∣ x ∣
+@0 0≤∣x∣ : ∀ x -> zeroℝ ≤ ∣ x ∣
 0≤∣x∣ x = nonNegx⇒0≤x (nonNeg∣x∣ x)
 
 @0 ∣x+y∣≤∣x∣+∣y∣ : ∀ x y -> ∣ x + y ∣ ≤ ∣ x ∣ + ∣ y ∣
@@ -2178,47 +2277,53 @@ neg-distribʳ-* = solve 2 (λ x y -> (⊝ (x ⊗ y)) ⊜ (x ⊗ (⊝ y))) ≃-re
                          ; ∣y₄ₙ∣ = ℚ.∣ seq y (2 ℕ.* (2 ℕ.* n)) ∣
                          ; ∣x₄ₙ+y₄ₙ∣ = ℚ.∣ seq x (2 ℕ.* (2 ℕ.* n)) ℚ.+ seq y (2 ℕ.* (2 ℕ.* n)) ∣ in begin
   ℚ.- (+ 1 / n)                        ≤⟨ ℚP.nonPositive⁻¹ _ ⟩
-  0ℚᵘ                                  ≈⟨ ℚP.≃-sym (ℚP.+-inverseʳ (∣x₄ₙ∣ ℚ.+ ∣y₄ₙ∣)) ⟩
+  (+ 0 / 1)                                  ≈⟨ ℚP.≃-sym (ℚP.+-inverseʳ (∣x₄ₙ∣ ℚ.+ ∣y₄ₙ∣)) ⟩
   ∣x₄ₙ∣ ℚ.+ ∣y₄ₙ∣ ℚ.- (∣x₄ₙ∣ ℚ.+ ∣y₄ₙ∣) ≤⟨ ℚP.+-monoʳ-≤ (∣x₄ₙ∣ ℚ.+ ∣y₄ₙ∣)
                                           (ℚP.neg-mono-≤ (ℚP.∣p+q∣≤∣p∣+∣q∣ (seq x (2 ℕ.* (2 ℕ.* n))) (seq y (2 ℕ.* (2 ℕ.* n))))) ⟩
   ∣x₄ₙ∣ ℚ.+ ∣y₄ₙ∣ ℚ.- ∣x₄ₙ+y₄ₙ∣          ∎})
   where open ℚP.≤-Reasoning
 
-x≤∣x∣ : ∀ {x} -> x ≤ ∣ x ∣
+@0 x≤∣x∣ : ∀ {x} -> x ≤ ∣ x ∣
 x≤∣x∣ {x} = nonNeg* (λ @0 {(suc k₁) -> let n = suc k₁ in begin
   ℚ.- (+ 1 / n)                             ≤⟨ ℚP.nonPositive⁻¹ _ ⟩
-  0ℚᵘ                                       ≤⟨ ℚP.p≤q⇒0≤q-p (p≤∣p∣ (seq x (2 ℕ.* n))) ⟩
+  (+ 0 / 1)                                       ≤⟨ ℚP.p≤q⇒0≤q-p (p≤∣p∣ (seq x (2 ℕ.* n))) ⟩
   ℚ.∣ seq x (2 ℕ.* n) ∣ ℚ.- seq x (2 ℕ.* n)  ∎})
   where open ℚP.≤-Reasoning
 
-x≄0⇒0<∣x∣ : ∀ {x} -> x ≄0 -> 0ℝ < ∣ x ∣
-x≄0⇒0<∣x∣ {x} (inj₁ x<0) = begin-strict
-  0ℝ       ≈⟨ 0≃-0 ⟩
-  - 0ℝ     <⟨ neg-mono-< x<0 ⟩
+xNonZeroThenZeroLtAbsx : ∀ (x : ℝ) -> x ≄ zeroℝ -> zeroℝ < abs x
+xNonZeroThenZeroLtAbsx x (Left xLtZero) = ltRespLEq (abs x) (negate zeroℝ) (zeroℝ) (≃-sym 0≃-0)
+                                            (ltRespREq (negate zeroℝ) (abs (negate x)) (abs x) ∣-x∣≃∣x∣
+                                              (ltLe0Trans (negate zeroℝ) (negate x) (abs (negate x)) (negMonoLt x zeroℝ xLtZero)
+                                                                                                      x≤∣x∣))
+  {-begin-strict
+  zeroℝ       ≈⟨ 0≃-0 ⟩
+  - zeroℝ     <⟨ negMonoLt x<0 ⟩
   - x      ≤⟨ x≤∣x∣ ⟩
   ∣ - x ∣  ≈⟨ ∣-x∣≃∣x∣ ⟩
   ∣ x ∣     ∎
-  where open ≤-Reasoning
-x≄0⇒0<∣x∣ {x} (inj₂ 0<x) = <-≤-trans 0<x x≤∣x∣
+  where open ≤-Reasoning-}
+xNonZeroThenZeroLtAbsx x (Right zeroLtx) = ltLe0Trans zeroℝ x (abs x) zeroLtx x≤∣x∣
+{-# COMPILE AGDA2HS xNonZeroThenZeroLtAbsx #-}
 
-x≄0⇒pos∣x∣ : ∀ {x} -> x ≄0 -> Positive ∣ x ∣
-x≄0⇒pos∣x∣ {x} x≄0 = 0<x⇒posx (x≄0⇒0<∣x∣ x≄0)
-
+xNonZeroThenPosAbsx : ∀ (x : ℝ) -> x ≄ zeroℝ -> Positive (abs x)
+xNonZeroThenPosAbsx x xNonZero = zeroLtxThenPosx (abs x) (xNonZeroThenZeroLtAbsx x xNonZero)
+{-# COMPILE AGDA2HS xNonZeroThenPosAbsx #-}
+{-
 ∣x∣<y⇒-y<x<y : ∀ x y -> ∣ x ∣ < y -> (- y) < x < y
-∣x∣<y⇒-y<x<y x y ∣x∣<y = <-≤0-trans { - y} { - ∣ x ∣} {x} (neg-mono-< ∣x∣<y) (begin
-  - ∣ x ∣   ≈⟨ -‿cong (≃-symm ∣-x∣≃∣x∣) ⟩
+∣x∣<y⇒-y<x<y x y ∣x∣<y = <-≤0-trans { - y} { - ∣ x ∣} {x} (negMonoLt ∣x∣<y) (begin
+  - ∣ x ∣   ≈⟨ -‿cong (≃-sym ∣-x∣≃∣x∣) ⟩
   - ∣ - x ∣ ≤⟨ neg-mono-≤ x≤∣x∣ ⟩
   - (- x)   ≈⟨ neg-involutive x ⟩
   x          ∎) , ≤0-<-trans {x} {∣ x ∣} {y} x≤∣x∣ ∣x∣<y
   where open ≤-Reasoning
 
 x<z∧y<z⇒x⊔y<z : ∀ x y z -> x < z -> y < z -> x ⊔ y < z
-x<z∧y<z⇒x⊔y<z x y z x<z y<z = lemma-2-8-1-onlyif (ℕ.pred N , lem)
+x<z∧y<z⇒x⊔y<z x y z x<z y<z = lemma281OnlyIf (ℕ.pred N , lem)
   where
     open ℚP.≤-Reasoning
-    fromx<z = fast-lemma-2-8-1-if x<z
+    fromx<z = fastLemma281If x<z
     N₁ = suc (proj₁ fromx<z)
-    fromy<z = fast-lemma-2-8-1-if y<z
+    fromy<z = fastLemma281If y<z
     N₂ = suc (proj₁ fromy<z)
     N = N₁ ℕ.⊔ N₂
 
@@ -2244,22 +2349,22 @@ x<z∧y<z⇒x⊔y<z x y z x<z y<z = lemma-2-8-1-onlyif (ℕ.pred N , lem)
           seq z (2 ℕ.* m) ℚ.- (seq x (2 ℕ.* m) ℚ.⊔ seq y (2 ℕ.* m))  ∎
 
 @0 p⋆<q⋆⇒p<q : ∀ p q -> p ⋆ < q ⋆ -> p ℚ.< q
-p⋆<q⋆⇒p<q p q (pos* (n , p⋆<q⋆)) = 0<q-p⇒p<q p q (begin-strict
-  0ℚᵘ           ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+p⋆<q⋆⇒p<q p q (MkPos (n , p⋆<q⋆)) = 0<q-p⇒p<q p q (begin-strict
+  (+ 0 / 1)           ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 1 / (suc n) <⟨ p⋆<q⋆ ⟩
   q ℚ.- p        ∎)
   where open ℚP.≤-Reasoning
 
 posp⇒posp⋆ : ∀ p -> ℚ.Positive p -> Positive (p ⋆)
-posp⇒posp⋆ p posp = 0<x⇒posx (p<q⇒p⋆<q⋆ 0ℚᵘ p (ℚP.positive⁻¹ posp))
+posp⇒posp⋆ p posp = zeroLtxThenPosx (pLtqThenToRealpLtToRealq (+ 0 / 1) p (ℚP.positive⁻¹ posp))
 
 @0 x<y∧x<z⇒x<y⊓z : ∀ x y z -> x < y -> x < z -> x < y ⊓ z
-x<y∧x<z⇒x<y⊓z x y z x<y x<z = lemma-2-8-1-onlyif (ℕ.pred N , lem)
+x<y∧x<z⇒x<y⊓z x y z x<y x<z = lemma281OnlyIf (ℕ.pred N , lem)
   where
     open ℚP.≤-Reasoning
-    fromx<y = fast-lemma-2-8-1-if x<y
+    fromx<y = fastLemma281If x<y
     N₁ = suc (proj₁ fromx<y)
-    fromx<z = fast-lemma-2-8-1-if x<z
+    fromx<z = fastLemma281If x<z
     N₂ = suc (proj₁ fromx<z)
     N = N₁ ℕ.⊔ N₂
 
@@ -2289,16 +2394,17 @@ x<y∧x<z⇒x<y⊓z x y z x<y x<z = lemma-2-8-1-onlyif (ℕ.pred N , lem)
           seq z (2 ℕ.* m) ℚ.- seq x (2 ℕ.* m)       ≈⟨ ℚP.+-congˡ (ℚ.- seq x (2 ℕ.* m))
                                                        (ℚP.≃-sym (ℚP.p≥q⇒p⊓q≃q z₂ₘ≤y₂ₘ)) ⟩
           seq (y ⊓ z) (2 ℕ.* m) ℚ.- seq x (2 ℕ.* m)  ∎
+-}
 
 -- Extra properties
 
 @0 x≄0⇒-x≄0 : ∀ x -> x ≄0 -> (- x) ≄0
-x≄0⇒-x≄0 x (inj₁ x<0) = inj₂ (pos-cong (≃-trans (+-comm 0ℝ (- x)) (+-congʳ (- x) 0≃-0)) x<0)
-x≄0⇒-x≄0 x (inj₂ 0<x) = inj₁ (pos-cong (≃-trans (≃-trans (+-comm x (- 0ℝ)) (+-congˡ x (≃-symm 0≃-0))) (+-congʳ 0ℝ (≃-symm (neg-involutive x)))) 0<x)
-
+x≄0⇒-x≄0 x (Left x<0) = Right (posCong (zeroℝ - x) (negate x - zeroℝ) (≃-trans (+-comm zeroℝ (- x)) (+-congʳ (- x) 0≃-0)) x<0)
+x≄0⇒-x≄0 x (Right 0<x) = Left (posCong (x - zeroℝ) (zeroℝ - negate x) (≃-trans (≃-trans (+-comm x (- zeroℝ)) (+-congˡ x (≃-sym 0≃-0))) (+-congʳ zeroℝ (≃-sym (neg-involutive x)))) 0<x)
+{-
 @0 lemma-2-14 : ∀ x -> ∀ (n : ℕ) -> {n≢0 : n ≢0} -> ∣ x - (seq x n) ⋆ ∣ ≤ ((+ 1 / n) {n≢0}) ⋆
 lemma-2-14 x (suc k₁) = nonNeg* (λ @0 {(suc k₂) -> let n = suc k₁; m = suc k₂; x₄ₘ = seq x (2 ℕ.* (2 ℕ.* m)); xₙ = seq x n in begin
-  ℚ.- (+ 1 / m)                                     <⟨ ℚP.neg-mono-< (q<r⇒+p/r<+p/q 1 m (2 ℕ.* (2 ℕ.* m))
+  ℚ.- (+ 1 / m)                                     <⟨ ℚP.negMonoLt (q<r⇒+p/r<+p/q 1 m (2 ℕ.* (2 ℕ.* m))
                                                                      (ℕP.<-trans (m<n*m ℕP.0<1+n ℕP.≤-refl)
                                                                                  (m<n*m ℕP.0<1+n ℕP.≤-refl))) ⟩
   ℚ.- (+ 1 / (2 ℕ.* (2 ℕ.* m)))                     ≈⟨ solve 2 (λ 4m n -> (⊝ 4m) ⊜ (n ⊖ (4m ⊕ n))) ℚP.≃-refl (+ 1 / (2 ℕ.* (2 ℕ.* m))) (+ 1 / n) ⟩
@@ -2313,20 +2419,20 @@ lemma-2-14 x (suc k₁) = nonNeg* (λ @0 {(suc k₂) -> let n = suc k₁; m = su
   ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- (seq x n ℚ.⊔ ℚ.- seq x n) ∣ ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ ℚ.∣ seq x n ∣
                                                        (ℚP.-‿cong (ℚP.≃-sym (∣p∣≃p⊔-p (seq x n))))) ⟩
   ℚ.∣ ℚ.∣ seq x n ∣ ℚ.- ℚ.∣ seq x n ∣ ∣             ≈⟨ ℚP.∣-∣-cong (ℚP.+-inverseʳ ℚ.∣ seq x n ∣) ⟩
-  0ℚᵘ                                              ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
+  (+ 0 / 1)                                              ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
   + 2 / n                                           ∎}
   where
     open ℚP.≤-Reasoning
 
 -y<x<y⇒∣x∣<y : ∀ x y -> (- y) < x < y -> ∣ x ∣ < y
--y<x<y⇒∣x∣<y x y -y<x<y = <-respˡ-≃0 {y} {x ⊔ (- x)} {∣ x ∣} (≃-symm (∣x∣≃x⊔-x x))
+-y<x<y⇒∣x∣<y x y -y<x<y = <-respˡ-≃0 {y} {x ⊔ (- x)} {∣ x ∣} (≃-sym (∣x∣≃x⊔-x x))
                               (x<z∧y<z⇒x⊔y<z x (- x) y
                                  (proj₂ -y<x<y)
-                                 (<-respʳ-≃0 (neg-involutive y) (neg-mono-< (proj₁ -y<x<y))))
+                                 (<-respʳ-≃0 (neg-involutive y) (negMonoLt (proj₁ -y<x<y))))
   {-∣ x ∣     ≈⟨ ∣x∣≃x⊔-x x ⟩
   x ⊔ (- x) <⟨ x<z∧y<z⇒x⊔y<z x (- x) y
                (proj₂ -y<x<y)
-               (<-respʳ-≃0 (neg-involutive y) (neg-mono-< (proj₁ -y<x<y))) ⟩
+               (<-respʳ-≃0 (neg-involutive y) (negMonoLt (proj₁ -y<x<y))) ⟩
   y          ∎-}
 
 @0 regular-n≤m : (x : ℕ -> ℚᵘ) ->
@@ -2357,18 +2463,18 @@ p⋆≤q⋆⇒p≤q p q (nonNeg* hyp) = p-q≤j⁻¹⇒p≤q (λ @0 {(suc j-1) -
 @0 p≤q⇒p⋆≤q⋆ : ∀ p q -> p ℚ.≤ q -> p ⋆ ≤ q ⋆
 p≤q⇒p⋆≤q⋆ p q p≤q = nonNeg* (λ @0 {(suc n-1) -> let n = suc n-1 in begin
   ℚ.- (+ 1 / n) <⟨ ℚP.negative⁻¹ _ ⟩
-  0ℚᵘ           ≤⟨ ℚP.p≤q⇒0≤q-p p≤q ⟩
+  (+ 0 / 1)           ≤⟨ ℚP.p≤q⇒0≤q-p p≤q ⟩
   q ℚ.- p        ∎})
   where open ℚP.≤-Reasoning
 
-@0 x≤Kx : ∀ x -> x ≤ (+ K x / 1) ⋆
+@0 x≤Kx : ∀ x -> x ≤ (+ fK x / 1) ⋆
 x≤Kx x = nonNeg* (λ @0 {(suc n-1) -> let n = suc n-1 in begin
   ℚ.- (+ 1 / n)                       <⟨ ℚP.negative⁻¹ _ ⟩
-  0ℚᵘ                                 <⟨ p<q⇒0<q-p ℚ.∣ seq x (2 ℕ.* n) ∣ (+ K x / 1)
+  (+ 0 / 1)                                 <⟨ p<q⇒0<q-p ℚ.∣ seq x (2 ℕ.* n) ∣ (+ fK x / 1)
                                          (canonical-strict-upper-bound x (2 ℕ.* n)) ⟩
-  + K x / 1 ℚ.- ℚ.∣ seq x (2 ℕ.* n) ∣ ≤⟨ ℚP.+-monoʳ-≤ (+ K x / 1) (
+  + fK x / 1 ℚ.- ℚ.∣ seq x (2 ℕ.* n) ∣ ≤⟨ ℚP.+-monoʳ-≤ (+ fK x / 1) (
                                          ℚP.neg-mono-≤ (p≤∣p∣ (seq x (2 ℕ.* n)))) ⟩
-  + K x / 1 ℚ.- seq x (2 ℕ.* n)        ∎})
+  + fK x / 1 ℚ.- seq x (2 ℕ.* n)        ∎})
   where open ℚP.≤-Reasoning
 
 @0 *-mono-≤ : ∀ {x y z w} -> NonNegative x -> NonNegative z -> x ≤ y -> z ≤ w -> x * z ≤ y * w
@@ -2380,15 +2486,15 @@ x≤Kx x = nonNeg* (λ @0 {(suc n-1) -> let n = suc n-1 in begin
 
 -- The Archimedean property
 archimedean-ℝ : ∀ x -> ∃0 λ (n-1 : ℕ) -> (+ (suc n-1) / 1) ⋆ > x
-archimedean-ℝ x = K x , (begin-strict
+archimedean-ℝ x = fK x , (begin-strict
   x                     <⟨ <-respˡ-≃ (+-identityˡ x)
-                           (+-monoˡ-< x (p<q⇒p⋆<q⋆ 0ℚᵘ 1ℚᵘ (ℚ.*<* (ℤ.+<+ ℕP.0<1+n)))) ⟩
-  1ℝ + x                ≤⟨ +-monoʳ-≤ 1ℝ (x≤Kx x) ⟩
-  1ℝ + (+ K x / 1) ⋆    ≈⟨ ≃-trans
-                           (≃-symm (⋆-distrib-+ 1ℚᵘ (+ K x / 1)))
+                           (+-monoˡ-< x (pLtqThenToRealpLtToRealq (+ 0 / 1) (+ 1 / 1) (ℚ.*<* (ℤ.+<+ ℕP.0<1+n)))) ⟩
+  oneℝ + x                ≤⟨ +-monoʳ-≤ oneℝ (x≤Kx x) ⟩
+  oneℝ + (+ fK x / 1) ⋆    ≈⟨ ≃-trans
+                           (≃-sym (⋆-distrib-+ (+ 1 / 1) (+ fK x / 1)))
                            (⋆-cong (ℚP.≃-reflexive (ℚP./-cong (cong (λ r -> + 1 ℤ.+ r)
-                           (ℤP.*-identityʳ (+ K x))) refl _ _))) ⟩
-  (+ (suc (K x)) / 1) ⋆  ∎)
+                           (ℤP.*-identityʳ (+ fK x))) refl _ _))) ⟩
+  (+ (suc (fK x)) / 1) ⋆  ∎)
   where open ≤-Reasoning
 
 abstract
@@ -2398,24 +2504,24 @@ abstract
 -- Density of ℚ in ℝ and corollaries
 
 density-of-ℚ : ∀ x y -> x < y -> ∃ λ (α : ℚᵘ) -> x < α ⋆ < y
-density-of-ℚ x y (pos* (n-1 , y₂ₙ-x₂ₙ>n⁻¹)) = α , 0<y-x⇒x<y x (α ⋆)
-                                                   (<-≤0-trans {0ℝ} {(+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)} {(α ⋆) - x} lemA (begin
+density-of-ℚ x y (MkPos (n-1 , y₂ₙ-x₂ₙ>n⁻¹)) = α , zeroLtxMinusxThenxLty x (α ⋆)
+                                                   (<-≤0-trans {zeroℝ} {(+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)} {(α ⋆) - x} lemA (begin
              (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)       ≤⟨ +-monoʳ-≤ ((+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆) (neg-mono-≤ (lemma-2-14 x (2 ℕ.* n))) ⟩
              (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ∣ x - (x₂ₙ ⋆) ∣             ≈⟨ +-congˡ (- ∣ x - x₂ₙ ⋆ ∣) (⋆-cong (lemB y₂ₙ x₂ₙ)) ⟩
              (((+ 1 / 2) ℚ.* (x₂ₙ ℚ.+ y₂ₙ) ℚ.- x₂ₙ) ⋆) - ∣ x - (x₂ₙ ⋆) ∣ ≈⟨ +-congˡ (- ∣ x - x₂ₙ ⋆ ∣) (⋆-distrib-to-p⋆-q⋆ α x₂ₙ) ⟩
              (α ⋆) - (x₂ₙ ⋆) - ∣ x - (x₂ₙ ⋆) ∣                           ≤⟨ +-monoʳ-≤ (α ⋆ - (x₂ₙ ⋆)) (neg-mono-≤ x≤∣x∣) ⟩
              (α ⋆) - (x₂ₙ ⋆) - (x - (x₂ₙ ⋆))                             ≈⟨ +-assoc (α ⋆) (- (x₂ₙ ⋆)) (- (x - (x₂ₙ ⋆))) ⟩
-             α ⋆ + (- (x₂ₙ ⋆) - (x - x₂ₙ ⋆))                             ≈⟨ +-congʳ (α ⋆) (≃-trans (≃-symm (neg-distrib-+ (x₂ₙ ⋆) (x - x₂ₙ ⋆)))
+             α ⋆ + (- (x₂ₙ ⋆) - (x - x₂ₙ ⋆))                             ≈⟨ +-congʳ (α ⋆) (≃-trans (≃-sym (neg-distrib-+ (x₂ₙ ⋆) (x - x₂ₙ ⋆)))
                                                                                                    (-‿cong (helper x (x₂ₙ ⋆)))) ⟩
              (α ⋆) - x                                                    ∎))  ,
-  0<y-x⇒x<y (α ⋆) y (<-≤0-trans {0ℝ} {(+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)} {y - α ⋆} lemA (begin
+  zeroLtxMinusxThenxLty (α ⋆) y (<-≤0-trans {zeroℝ} {(+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)} {y - α ⋆} lemA (begin
             (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)       ≤⟨ +-monoʳ-≤ ((+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆) (neg-mono-≤ (lemma-2-14 y (2 ℕ.* n))) ⟩
             (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ∣ y - y₂ₙ ⋆ ∣               ≤⟨ +-monoʳ-≤ ((+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆)
                                                                            (neg-mono-≤ (≤-respʳ-≃ (∣x-y∣≃∣y-x∣ (y₂ₙ ⋆) y) x≤∣x∣)) ⟩
             (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - (y₂ₙ ⋆ - y)                 ≈⟨ +-congʳ ((+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆) (neg-distrib-+ (y₂ₙ ⋆) (- y)) ⟩
             (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ + (- (y₂ₙ ⋆) - (- y))         ≈⟨ ≃-trans
-                                                                           (≃-symm (+-assoc ((+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆) (- (y₂ₙ ⋆)) (- (- y))))
-                                                                           (+-congˡ (- (- y)) (≃-symm (⋆-distrib-to-p⋆-q⋆ (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) y₂ₙ))) ⟩
+                                                                           (≃-sym (+-assoc ((+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆) (- (y₂ₙ ⋆)) (- (- y))))
+                                                                           (+-congˡ (- (- y)) (≃-sym (⋆-distrib-to-p⋆-q⋆ (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) y₂ₙ))) ⟩
             (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ) ℚ.- y₂ₙ) ⋆ - (- y)               ≈⟨ +-cong (⋆-cong (lemC y₂ₙ x₂ₙ)) (neg-involutive y) ⟩
             (ℚ.- α) ⋆ + y                                               ≈⟨ ≃-trans (+-comm ((ℚ.- α) ⋆) y) (+-congʳ y (⋆-distrib-neg α)) ⟩
             y - α ⋆                                                      ∎
@@ -2429,23 +2535,23 @@ density-of-ℚ x y (pos* (n-1 , y₂ₙ-x₂ₙ>n⁻¹)) = α , 0<y-x⇒x<y x (�
     y₂ₙ = seq y (2 ℕ.* n)
     α = (+ 1 / 2) ℚ.* (x₂ₙ ℚ.+ y₂ₙ)
     
-    lemA : 0ℝ < (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)
+    lemA : zeroℝ < (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)
     lemA = begin-strict
-      0ℝ                                                          ≈⟨ ⋆-cong (ℚP.≃-sym (ℚP.+-inverseʳ (+ 1 / (2 ℕ.* n)))) ⟩
-      (+ 1 / (2 ℕ.* n) ℚ.- (+ 1 / (2 ℕ.* n))) ⋆                   <⟨ p<q⇒p⋆<q⋆
+      zeroℝ                                                          ≈⟨ ⋆-cong (ℚP.≃-sym (ℚP.+-inverseʳ (+ 1 / (2 ℕ.* n)))) ⟩
+      (+ 1 / (2 ℕ.* n) ℚ.- (+ 1 / (2 ℕ.* n))) ⋆                   <⟨ pLtqThenToRealpLtToRealq
                                                                      (+ 1 / (2 ℕ.* n) ℚ.- (+ 1 / (2 ℕ.* n)))
                                                                      (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ) ℚ.- (+ 1 / (2 ℕ.* n)))
                                                                      (ℚP.+-monoˡ-< (ℚ.- (+ 1 / (2 ℕ.* n)))
-                                                                   (ℚP.*-monoʳ-<-pos {+ 1 / 2} _ y₂ₙ-x₂ₙ>n⁻¹)) ⟩
+                                                                   (ℚP.multiMonoRLtPos {+ 1 / 2} _ y₂ₙ-x₂ₙ>n⁻¹)) ⟩
       (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ) ℚ.- (+ 1 / (2 ℕ.* n))) ⋆         ≈⟨ ⋆-distrib-to-p⋆-q⋆ (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) (+ 1 / (2 ℕ.* n)) ⟩
       (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)        ∎
 
     @0 helper : ∀ x y -> y + (x - y) ≃ x
     helper x y = begin-equality
       y + (x - y)   ≈⟨ +-congʳ y (+-comm x (- y)) ⟩
-      y + (- y + x) ≈⟨ ≃-symm (+-assoc y (- y) x) ⟩
+      y + (- y + x) ≈⟨ ≃-sym (+-assoc y (- y) x) ⟩
       (y - y) + x   ≈⟨ +-congˡ x (+-inverseʳ y) ⟩
-      0ℝ + x        ≈⟨ +-identityˡ x ⟩
+      zeroℝ + x        ≈⟨ +-identityˡ x ⟩
       x              ∎
 
     @0 lemB : ∀ p q -> + 1 / 2 ℚ.* (p ℚ.- q) ℚ.≃ + 1 / 2 ℚ.* (q ℚ.+ p) ℚ.- q
@@ -2473,9 +2579,9 @@ corollary-2-15 x r posr = α , <-respˡ-≃ (∣x-y∣≃∣y-x∣ (α ⋆) x) (
     open ≤-Reasoning
     -r+x<r+x : - r + x < r + x
     -r+x<r+x = +-monoˡ-< x (begin-strict
-      - r   <⟨ neg-mono-< (posx⇒0<x posr) ⟩
-      - 0ℝ  ≈⟨ ≃-symm 0≃-0 ⟩
-      0ℝ    <⟨ posx⇒0<x posr ⟩
+      - r   <⟨ negMonoLt (posxThenZeroLtx posr) ⟩
+      - zeroℝ  ≈⟨ ≃-sym 0≃-0 ⟩
+      zeroℝ    <⟨ posxThenZeroLtx posr ⟩
       r      ∎)
     
     αp = fast-density-of-ℚ (- r + x) (r + x) -r+x<r+x
@@ -2534,7 +2640,7 @@ neg-distrib-∑ xs 0 n = lem n
   where
     open ≃-Reasoning
     lem : ∀ n -> - ∑₀ xs n ≃ ∑₀ (λ j -> - xs j) n
-    lem 0 = ≃-symm 0≃-0
+    lem 0 = ≃-sym 0≃-0
     lem (suc n) = begin
       - (∑₀ xs n + xs n)          ≈⟨ neg-distrib-+ (∑₀ xs n) (xs n) ⟩
       - ∑₀ xs n - xs n            ≈⟨ +-congˡ (- xs n) (lem n) ⟩
@@ -2549,9 +2655,9 @@ neg-distrib-∑ xs (suc i) n = begin
   ∑₀ (λ j -> - xs j) n - (∑₀ (λ j -> - xs j) i - xs i)  ∎
   where open ≃-Reasoning
  
-@0 x+y>0⇒x>0∨y>0 : ∀ x y -> x + y > 0ℝ -> x > 0ℝ ⊎ y > 0ℝ
-x+y>0⇒x>0∨y>0 x y x+y>0 = [ (λ hyp -> inj₁ (lem x X (proj₂ X-generator) (ℚP.<-respˡ-≃ 2⁻¹*2⁻¹α≃4⁻¹α hyp))) ,
-                            (λ hyp -> inj₂ (lem y Y (proj₂ Y-generator) (ℚP.<-respˡ-≃ 2⁻¹*2⁻¹α≃4⁻¹α hyp))) ]′
+@0 x+y>0⇒x>0∨y>0 : ∀ x y -> x + y > zeroℝ -> Either (x > zeroℝ) (y > zeroℝ)
+x+y>0⇒x>0∨y>0 x y x+y>0 = [ (λ hyp -> Left (lem x X (proj₂ X-generator) (ℚP.<-respˡ-≃ 2⁻¹*2⁻¹α≃4⁻¹α hyp))) ,
+                            (λ hyp -> Right (lem y Y (proj₂ Y-generator) (ℚP.<-respˡ-≃ 2⁻¹*2⁻¹α≃4⁻¹α hyp))) ]′
                             (p+q>r⇒p>2⁻¹r∨q>2⁻¹r X Y ((+ 1 / 2) ℚ.* α) ax+ay>α/4)
   where
     open ℝ-Solver
@@ -2564,13 +2670,13 @@ x+y>0⇒x>0∨y>0 x y x+y>0 = [ (λ hyp -> inj₁ (lem x X (proj₂ X-generator)
         ; _⊜_   to _:=_
         ; Κ     to κ
         )
-    α-generator = fast-density-of-ℚ 0ℝ (x + y) x+y>0
+    α-generator = fast-density-of-ℚ zeroℝ (x + y) x+y>0
     α = proj₁ α-generator
 
     pos4⁻¹α : Positive (((+ 1 / 4) ℚ.* α) ⋆)
     pos4⁻¹α = posp⇒posp⋆ ((+ 1 / 4) ℚ.* α) (ℚ.positive (begin-strict
-      0ℚᵘ               ≈⟨ ℚP.≃-sym (ℚP.*-zeroʳ (+ 1 / 4)) ⟩
-      (+ 1 / 4) ℚ.* 0ℚᵘ <⟨ ℚP.*-monoʳ-<-pos {+ 1 / 4} _ (p⋆<q⋆⇒p<q 0ℚᵘ α (proj₁ (proj₂ α-generator))) ⟩
+      (+ 0 / 1)               ≈⟨ ℚP.≃-sym (ℚP.*-zeroʳ (+ 1 / 4)) ⟩
+      (+ 1 / 4) ℚ.* (+ 0 / 1) <⟨ ℚP.multiMonoRLtPos {+ 1 / 4} _ (p⋆<q⋆⇒p<q (+ 0 / 1) α (proj₁ (proj₂ α-generator))) ⟩
       (+ 1 / 4) ℚ.* α    ∎))
       where open ℚP.≤-Reasoning
 
@@ -2595,28 +2701,28 @@ x+y>0⇒x>0∨y>0 x y x+y>0 = [ (λ hyp -> inj₁ (lem x X (proj₂ X-generator)
                                                          (⋆-distrib-to-p⋆-q⋆ (α ℚ.- (+ 1 / 4) ℚ.* α) ((+ 1 / 4) ℚ.* α))
                                                          (+-congˡ (- ((+ 1 / 4 ℚ.* α) ⋆)) (⋆-distrib-to-p⋆-q⋆ α ((+ 1 / 4) ℚ.* α))) ⟩
       α ⋆ - ((+ 1 / 4) ℚ.* α) ⋆ - ((+ 1 / 4) ℚ.* α) ⋆ <⟨ +-mono-<
-                                                         (+-mono-< (proj₂ (proj₂ α-generator)) (neg-mono-< (proj₂ X-generator)))
-                                                         (neg-mono-< (proj₂ Y-generator)) ⟩
+                                                         (+-mono-< (proj₂ (proj₂ α-generator)) (negMonoLt (proj₂ X-generator)))
+                                                         (negMonoLt (proj₂ Y-generator)) ⟩
       (x + y) - ∣ x - X ⋆ ∣ - ∣ y - Y ⋆ ∣              ≤⟨ +-mono-≤ (+-monoʳ-≤ (x + y) (neg-mono-≤ x≤∣x∣)) (neg-mono-≤ x≤∣x∣) ⟩
       (x + y) - (x - X ⋆) - (y - Y ⋆)                 ≈⟨ +-cong (+-congʳ (x + y) (neg-distrib-+ x (- (X ⋆)))) (neg-distrib-+ y (- (Y ⋆))) ⟩
       (x + y) + (- x - (- (X ⋆))) + (- y - (- (Y ⋆))) ≈⟨ solve 4 (λ x y X Y ->
                                                          ((x ⊕ y) ⊕ (⊝ x ⊖ (⊝ X)) ⊕ (⊝ y ⊖ (⊝ Y))) ⊜ (X ⊕ Y))
                                                          ≃-refl x y (X ⋆) (Y ⋆) ⟩
-      X ⋆ + Y ⋆                                       ≈⟨ ≃-symm (⋆-distrib-+ X Y) ⟩
+      X ⋆ + Y ⋆                                       ≈⟨ ≃-sym (⋆-distrib-+ X Y) ⟩
       (X ℚ.+ Y) ⋆                                      ∎)
       where open ≤-Reasoning
 
-    lem : ∀ (z : ℝ) -> (Z : ℚᵘ) -> ∣ z - Z ⋆ ∣ < ((+ 1 / 4) ℚ.* α) ⋆ -> Z ℚ.> (+ 1 / 4) ℚ.* α -> z > 0ℝ
+    lem : ∀ (z : ℝ) -> (Z : ℚᵘ) -> ∣ z - Z ⋆ ∣ < ((+ 1 / 4) ℚ.* α) ⋆ -> Z ℚ.> (+ 1 / 4) ℚ.* α -> z > zeroℝ
     lem z Z ∣z-Z∣<4⁻¹α Z>4⁻¹α = begin-strict
-      0ℝ                                        ≈⟨ ≃-symm (+-inverseʳ (((+ 1 / 4) ℚ.* α) ⋆)) ⟩
-      ((+ 1 / 4) ℚ.* α) ⋆ - ((+ 1 / 4) ℚ.* α) ⋆ <⟨ +-mono-< (p<q⇒p⋆<q⋆ ((+ 1 / 4) ℚ.* α) Z Z>4⁻¹α) (neg-mono-< ∣z-Z∣<4⁻¹α) ⟩
+      zeroℝ                                        ≈⟨ ≃-sym (+-inverseʳ (((+ 1 / 4) ℚ.* α) ⋆)) ⟩
+      ((+ 1 / 4) ℚ.* α) ⋆ - ((+ 1 / 4) ℚ.* α) ⋆ <⟨ +-mono-< (pLtqThenToRealpLtToRealq ((+ 1 / 4) ℚ.* α) Z Z>4⁻¹α) (negMonoLt ∣z-Z∣<4⁻¹α) ⟩
       Z ⋆ - ∣ z - Z ⋆ ∣                         ≈⟨ +-congʳ (Z ⋆) (-‿cong (∣x-y∣≃∣y-x∣ z (Z ⋆))) ⟩
       Z ⋆ - ∣ Z ⋆ - z ∣                         ≤⟨ +-monoʳ-≤ (Z ⋆) (neg-mono-≤ x≤∣x∣) ⟩
       Z ⋆ - (Z ⋆ - z)                           ≈⟨ solve 2 (λ z Z -> (Z ⊖ (Z ⊖ z)) ⊜ z) ≃-refl z (Z ⋆) ⟩
       z                        ∎
       where open ≤-Reasoning
 
-@0 proposition-2-16 : ∀ xs -> ∀ n -> {n ≢0} -> ∑₀ xs n > 0ℝ -> ∃ λ j -> j ℕ.< n × xs j > 0ℝ
+@0 proposition-2-16 : ∀ xs -> ∀ n -> {n ≢0} -> ∑₀ xs n > zeroℝ -> ∃ λ j -> j ℕ.< n × xs j > zeroℝ
 proposition-2-16 xs 1 ∑xs>0 = 0 , ℕP.0<1+n , <-respʳ-≃ (+-identityˡ (xs 0)) ∑xs>0
 proposition-2-16 xs (suc (suc n-2)) ∑xs>0 = let n-1 = suc n-2 in
                                             [ (λ hyp -> let fromhyp = proposition-2-16 xs n-1 hyp in
@@ -2624,23 +2730,23 @@ proposition-2-16 xs (suc (suc n-2)) ∑xs>0 = let n-1 = suc n-2 in
                                               (λ hyp -> n-1 , ℕP.n<1+n n-1 , hyp) ]′
                                             (x+y>0⇒x>0∨y>0 (∑₀ xs n-1) (xs n-1) ∑xs>0)
 
-@0 corollary-2-17 : ∀ x y z -> y < z -> x < z ⊎ x > y
-corollary-2-17 x y z y<z = [ (λ z-x>0 -> inj₁ (0<y-x⇒x<y x z z-x>0)) , (λ x-y>0 -> inj₂ (0<y-x⇒x<y y x x-y>0)) ]′
-                           (x+y>0⇒x>0∨y>0 (z - x) (x - y) (<-respʳ-≃ lem (x<y⇒0<y-x y z y<z)))
+@0 corollary-2-17 : ∀ x y z -> y < z -> Either (x < z) (x > y)
+corollary-2-17 x y z y<z = [ (λ z-x>0 -> Left (zeroLtxMinusxThenxLty x z z-x>0)) , (λ x-y>0 -> Right (zeroLtxMinusxThenxLty y x x-y>0)) ]′
+                           (x+y>0⇒x>0∨y>0 (z - x) (x - y) (<-respʳ-≃ lem (xLtyThenZeroLtyMinusx y z y<z)))
   where
     open ℝ-Solver
     lem : z - y ≃ (z - x) + (x - y)
     lem = solve 3 (λ x y z -> (z ⊖ y) ⊜ ((z ⊖ x) ⊕ (x ⊖ y))) ≃-refl x y z
 
 abstract
-  @0 fast-corollary-2-17 : ∀ x y z -> y < z -> x < z ⊎ x > y
+  @0 fast-corollary-2-17 : ∀ x y z -> y < z -> Either (x < z) (x > y)
   fast-corollary-2-17 = corollary-2-17
 
 -- Properties of max, the maximum over a sequence function
 @0 m≤n⇒maxfm≤maxfn : ∀ (f : ℕ -> ℝ) -> ∀ m n -> m ℕ.≤ n -> max f m ≤ max f n
 m≤n⇒maxfm≤maxfn f m n m≤n with ≤⇒≡∨< m n m≤n
-... | inj₁ refl = ≤-refl
-m≤n⇒maxfm≤maxfn f m .(suc n) m≤1+n | inj₂ (ℕ.s≤s {n = n} m≤n) = ≤-trans (m≤n⇒maxfm≤maxfn f m n m≤n) (x≤x⊔y (max f n) (f (suc n)))
+... | Left refl = ≤-refl
+m≤n⇒maxfm≤maxfn f m .(suc n) m≤1+n | Right (ℕ.s≤s {n = n} m≤n) = ≤-trans (m≤n⇒maxfm≤maxfn f m n m≤n) (x≤x⊔y (max f n) (f (suc n)))
 
 @0 m≤n⇒fm≤maxfn : ∀ (f : ℕ -> ℝ) -> ∀ m n -> m ℕ.≤ n -> f m ≤ max f n
 m≤n⇒fm≤maxfn f zero n m≤n    = m≤n⇒maxfm≤maxfn f 0 n ℕ.z≤n
@@ -2651,7 +2757,7 @@ m≤n⇒fm≤maxfn f (suc m) n 1+m≤n = ≤-trans (lem (suc m)) (m≤n⇒maxfm�
     lem (suc k) = x≤y⊔x (f (suc k)) (max f k)
 
 @0 <-irrefl : Irreflexive _≃_ _<_
-<-irrefl {x} {y} (*≃* x≃y) (pos* (n-1 , x<y)) = let n = suc n-1 in ℚP.<-irrefl ℚP.≃-refl (begin-strict
+<-irrefl {x} {y} (*≃* x≃y) (MkPos (n-1 , x<y)) = let n = suc n-1 in ℚP.<-irrefl ℚP.≃-refl (begin-strict
   + 1 / n                                   <⟨ x<y ⟩
   seq y (2 ℕ.* n) ℚ.- seq x (2 ℕ.* n)       ≤⟨ p≤∣p∣ (seq y (2 ℕ.* n) ℚ.- seq x (2 ℕ.* n)) ⟩
   ℚ.∣ seq y (2 ℕ.* n) ℚ.- seq x (2 ℕ.* n) ∣ ≈⟨ ∣p-q∣≃∣q-p∣ (seq y (2 ℕ.* n)) (seq x (2 ℕ.* n)) ⟩
@@ -2661,19 +2767,19 @@ m≤n⇒fm≤maxfn f (suc m) n 1+m≤n = ≤-trans (lem (suc m)) (m≤n⇒maxfm�
   where open ℚP.≤-Reasoning
 
 @0 p⋆≄0⇒∣↥p∣≢0 : ∀ p -> (p ⋆) ≄0 -> ℤ.∣ ↥ p ∣ ≢0
-p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ (+_ zero) d-1) (inj₁ p⋆<0) = let d = suc d-1 in <-irrefl (≃-reflexive (λ {(suc n-1) -> ℚ.*≡* (sym (ℤP.*-zeroˡ (+ d)))})) p⋆<0
-p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ +[1+ n ] denominator-2) (inj₁ p⋆<0) = _
-p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ (-[1+_] n) denominator-2) (inj₁ p⋆<0) = _
-p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ (+_ zero) d-1) (inj₂ 0<p⋆) = let d = suc d-1 in <-irrefl (≃-reflexive (λ {(suc n-1) -> ℚ.*≡* (ℤP.*-zeroˡ (+ d))})) 0<p⋆
-p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ +[1+ n ] denominator-2) (inj₂ 0<p⋆) = _
-p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ (-[1+_] n) denominator-2) (inj₂ 0<p⋆) = _
+p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ (+_ zero) d-1) (Left p⋆<0) = let d = suc d-1 in <-irrefl (≃-reflexive (λ {(suc n-1) -> ℚ.*≡* (sym (ℤP.*-zeroˡ (+ d)))})) p⋆<0
+p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ +[1+ n ] denominator-2) (Left p⋆<0) = _
+p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ (-[1+_] n) denominator-2) (Left p⋆<0) = _
+p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ (+_ zero) d-1) (Right 0<p⋆) = let d = suc d-1 in <-irrefl (≃-reflexive (λ {(suc n-1) -> ℚ.*≡* (ℤP.*-zeroˡ (+ d))})) 0<p⋆
+p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ +[1+ n ] denominator-2) (Right 0<p⋆) = _
+p⋆≄0⇒∣↥p∣≢0 (mkℚᵘ (-[1+_] n) denominator-2) (Right 0<p⋆) = _
 
 @0 ∣↥p∣≢0⇒p⋆≄0 : ∀ p -> ℤ.∣ ↥ p ∣ ≢0 -> (p ⋆) ≄0
-∣↥p∣≢0⇒p⋆≄0 (mkℚᵘ +[1+ n ] d-1) ∣↥p∣≢0 = inj₂ (p<q⇒p⋆<q⋆ 0ℚᵘ (+[1+ n ] / (suc d-1)) (ℚP.positive⁻¹ _))
-∣↥p∣≢0⇒p⋆≄0 (mkℚᵘ (-[1+_] n) d-1) ∣↥p∣≢0 = inj₁ (p<q⇒p⋆<q⋆ (-[1+_] n / (suc d-1)) 0ℚᵘ (ℚP.negative⁻¹ _))
+∣↥p∣≢0⇒p⋆≄0 (mkℚᵘ +[1+ n ] d-1) ∣↥p∣≢0 = Right (pLtqThenToRealpLtToRealq (+ 0 / 1) (+[1+ n ] / (suc d-1)) (ℚP.positive⁻¹ _))
+∣↥p∣≢0⇒p⋆≄0 (mkℚᵘ (-[1+_] n) d-1) ∣↥p∣≢0 = Left (pLtqThenToRealpLtToRealq (-[1+_] n / (suc d-1)) (+ 0 / 1) (ℚP.negative⁻¹ _))
 
-@0 0≤y-x⇒x≤y : ∀ {x y} -> 0ℝ ≤ y - x -> x ≤ y
-0≤y-x⇒x≤y {x} {y} 0≤y-x = nonNeg-cong (≃-trans (+-congʳ (y - x) (≃-symm 0≃-0)) (+-identityʳ (y - x))) 0≤y-x
+@0 0≤y-x⇒x≤y : ∀ {x y} -> zeroℝ ≤ y - x -> x ≤ y
+0≤y-x⇒x≤y {x} {y} 0≤y-x = nonNeg-cong (≃-trans (+-congʳ (y - x) (≃-sym 0≃-0)) (+-identityʳ (y - x))) 0≤y-x
 
 @0 x≤z∧y≤z⇒x⊔y≤z : ∀ {x y z} -> x ≤ z -> y ≤ z -> x ⊔ y ≤ z
 x≤z∧y≤z⇒x⊔y≤z {x} {y} {z} x≤z y≤z = lemma-2-8-2-onlyif lem
@@ -2684,8 +2790,8 @@ x≤z∧y≤z⇒x⊔y≤z {x} {y} {z} x≤z y≤z = lemma-2-8-2-onlyif lem
                   [ left m m≥N , right m m≥N ]′ (ℚP.≤-total (seq y (2 ℕ.* m)) (seq x (2 ℕ.* m)))}
       where
         n = suc n-1
-        fromx≤z = fast-lemma-2-8-2-if x≤z n
-        fromy≤z = fast-lemma-2-8-2-if y≤z n
+        fromx≤z = fastLemma282If x≤z n
+        fromy≤z = fastLemma282If y≤z n
         N₁ = proj₁ fromx≤z
         N₂ = proj₁ fromy≤z
         N = suc (N₁ ℕ.⊔ N₂)
@@ -2707,3 +2813,4 @@ x≤z∧y≤z⇒x⊔y≤z {x} {y} {z} x≤z y≤z = lemma-2-8-2-onlyif lem
           seq z (2 ℕ.* m) ℚ.- seq y (2 ℕ.* m)       ≈⟨ ℚP.+-congʳ (seq z (2 ℕ.* m))
                                                        (ℚP.-‿cong (ℚP.≃-sym (ℚP.p≤q⇒p⊔q≃q x₂ₘ≤y₂ₘ))) ⟩
           seq z (2 ℕ.* m) ℚ.- seq (x ⊔ y) (2 ℕ.* m)  ∎
+-}

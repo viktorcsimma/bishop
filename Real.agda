@@ -28,7 +28,7 @@ import Data.Rational.Unnormalised.Properties as ℚP
 open import Algebra.Bundles
 open import Algebra.Structures
 open import Data.Empty
-open import Data.Sum
+open import Data.Sum  -- for rational proofs, we have to keep this here
 open import Data.Maybe.Base
 import NonReflectiveQ as ℚ-Solver
 import NonReflectiveZ as ℤ-Solver
@@ -37,6 +37,7 @@ open import Data.List hiding (sum)
 -- we have to import this for the Num type class
 -- but with lots of hidings
 open import Haskell.Prim.Num -- hiding (seq; step-≡; _∎; cong; _×_; _×_×_; sym; begin_; _,_; m; max; Negative; _<_; _>_; sum) --is --cubical-compatible and not --without-K
+open import Haskell.Prim.Either
 open import Haskell.Prim using (_∘_)
 
 open import Agda.Builtin.Unit
@@ -63,7 +64,7 @@ infix 4 _≃_
 infixl 6 _⊔_ _⊓_ _⊓₂_
 
 data _≃_ : Rel ℝ Level.zero where
-  *≃* : {x y : ℝ} → @0 ((n : ℕ) {n≢0 : n ≢0} →
+  *≃* : {@0 x y : ℝ} → @0 ((n : ℕ) {n≢0 : n ≢0} →
         ℚ.∣ seq x n ℚ.- seq y n ∣ ℚ.≤ (+ 2 / n) {n≢0}) →
         x ≃ y
 
@@ -295,22 +296,15 @@ instance
   iℝNum .signum _ = fromInteger (+ 42)
 {-# COMPILE AGDA2HS iℝNum #-}
 
-{-
--- It does complain for this one too... this time for the name.
-_-_ : ℝ -> ℝ -> ℝ
-x - y = x + negate y
-
--- Let's go cheating for now.
-{-# FOREIGN AGDA2HS
-  (-) :: ℝ -> ℝ -> ℝ
-  x - y = x + negate y
-#-}
--}
+-- And we have to use signum somewhere; otherwise it won't get imported from Prelude.
+signum' : ℝ → ℝ
+signum' = signum
+{-# COMPILE AGDA2HS signum' #-}
 
 -- x ⊔ y is the maximum of x and y.
 -- Here I had to create a new helper called `reg-main` so that the where clause can access the parameters.
 -- But it complains for the type, although it is erased...
--- Jesper said he would take a look at it. See https://github.com/agda/agda2hs/issues/182.
+-- I think I have fixed that now. See PR #186 at agda2hs.
 _⊔_ : ℝ -> ℝ -> ℝ
 -- seq (x ⊔ y) n = (seq x n) ℚ.⊔ (seq y n)
 -- reg (x ⊔ y) (suc k₁) (suc k₂) = [ left , right ]′ (ℚP.≤-total (seq x m ℚ.⊔ seq y m) (seq x n ℚ.⊔ seq y n))
@@ -380,7 +374,7 @@ x ⊔ y = Mkℝ (λ n → (seq x n) ℚ.⊔ (seq y n)) reg_main
                                                                     (ℚP.-‿cong {seq x n ℚ.⊔ seq y n} {seq y n ℚ.⊔ seq x n} (ℚP.⊔-comm (seq x n) (seq y n)))) ⟩
            (seq y m ℚ.⊔ seq x m) ℚ.- (seq y n ℚ.⊔ seq x n)       ≤⟨ lem (seq y m) (seq x m) (seq y n) (seq x n) hyp2 m n (reg x m n) ⟩
            (+ 1 / m) ℚ.+ (+ 1 / n)                                                      ∎
--- {-# COMPILE AGDA2HS _⊔_ #-}
+{-# COMPILE AGDA2HS _⊔_ #-}
 
 -- x ⊓ y is the minimum of x and y.
 -- This seems to be more agda2hs-compatible. What if we rewrote _⊔_ too?
@@ -427,14 +421,14 @@ pow : ℝ -> ℕ -> ℝ
 pow x 0 = oneℝ
 pow x (suc n) = pow x n * x
 -- And now a nasty trick for fast exponentiation.
--- Maybe we should prove the correctness of this sometime. Well, we should.
+-- Maybe we should prove the correctness of this sometime. Well, we should. But later on.
 {-# FOREIGN AGDA2HS
   pow :: ℝ -> Natural -> ℝ
   pow x n = go x n oneℝ
     where
       go :: ℝ -> Natural -> ℝ -> ℝ
       go base 0 res = res
-      go base exp res = go (base * base) (exp ℕD./ 2) (if (even exp) then res else res * base)
+      go base exp res = go (base * base) (exp `div` 2) (if (even exp) then res else res * base)
 #-}
 -- Or if we opt for fairness:
 -- {-# COMPILE AGDA2HS pow #-}
@@ -449,7 +443,17 @@ For an example of this, see the convergent⇒bounded proof, particularly the par
 max : (ℕ → ℝ) → (n : ℕ) → ℝ
 max f 0 = f 0
 max f (suc n) = max f n ⊔ f (suc n)
--- {-# COMPILE AGDA2HS max #-}      -- we would need _⊔_ for this
+
+-- And a version which does not pattern match on suc. This can get compiled.
+{-# TERMINATING #-}
+max' : (ℕ → ℝ) → (n : ℕ) → ℝ
+max' f 0 = f 0
+max' f n = max' f (n ℕ.∸ 1) ⊔ f n
+{-# COMPILE AGDA2HS max' #-}
+
+@0 max≡max' : ∀ (f : ℕ → ℝ) → (n : ℕ) → max f n ≡ max' f n
+max≡max' f 0 = refl
+max≡max' f (suc n) = cong (_⊔ (f (suc n))) (max≡max' f n)
 
 -- We will have to use Σ0 instead of ∃0 and MkΣ0 instead of _,_.
 -- But I think this is bearable.
@@ -462,7 +466,7 @@ data Positive (@0 x : ℝ) : Set where              -- this is it! it can be era
 {-# COMPILE AGDA2HS Positive newtype #-}
 
 data NonNegative : Pred ℝ 0ℓ where
-  nonNeg* : ∀ {x} -> @0 (∀ (n : ℕ) -> {n≢0 : n ≢0} -> seq x n ℚ.≥ ℚ.- ((+ 1 / n) {n≢0})) -> NonNegative x
+  nonNeg* : ∀ {x} -> @0 (∀ (n : ℕ) -> {@0 n≢0 : n ≢0} -> seq x n ℚ.≥ ℚ.- ((+ 1 / n) {n≢0})) -> NonNegative x
 -- I think this doesn't need to be compiled
 
 Negative : (@0 x : ℝ) → Set
@@ -472,23 +476,16 @@ Negative x = Positive (negate x)
 -- Ordering of ℝ
 infix 4 _<_ _>_ _≤_ _≥_
 
--- Now this nasty one. This must be compiled, but (<) cannot be a type name in Haskell.
--- At least in standard Haskell;)
--- What about this?
--- {-# FOREIGN AGDA2HS {-# LANGUAGE TypeOperators #-} #-}
-_<_ : Rel ℝ 0ℓ
+-- Now this nasty one.
+-- We have rewritten the Reasoning module; that's why this can have erased parameters.
+{-# FOREIGN AGDA2HS {-# LANGUAGE TypeOperators #-} #-}
+_<_ : @0 ℝ → @0 ℝ → Set
 x < y = Positive (y - x)
--- {-# COMPILE AGDA2HS _<_ #-}
-{-
-{-# FOREIGN AGDA2HS
-  type (<) = Positive -- this doesn't work; the parantheses disappear
-                      -- but it would work if the parantheses were left there
-#-}
--}
--- well, this remains a TODO
+{-# COMPILE AGDA2HS _<_ #-}
 
-_>_ : Rel ℝ 0ℓ
+_>_ : @0 ℝ → @0 ℝ → Set
 x > y = y < x
+{-# COMPILE AGDA2HS _>_ #-}
 
 _≤_ : Rel ℝ 0ℓ
 x ≤ y = NonNegative (y - x)
@@ -496,13 +493,14 @@ x ≤ y = NonNegative (y - x)
 _≥_ : Rel ℝ 0ℓ
 x ≥ y = y ≤ x
 
-_≄_ : Rel ℝ 0ℓ
-x ≄ y = x < y ⊎ y < x
+_≄_ : @0 ℝ → @0 ℝ → Set
+x ≄ y = Either (x < y) (y < x)
+{-# COMPILE AGDA2HS _≄_ #-}
 
-_≄0 : ℝ -> Set
+_≄0 : @0 ℝ -> Set
 x ≄0 = x ≄ zeroℝ
 
-_<_<_ : (x y z : ℝ) -> Set
+_<_<_ : (@0 x y z : ℝ) -> Set
 x < y < z = (x < y) × (y < z)
 
 _<_≤_ : (x y z : ℝ) -> Set
@@ -528,16 +526,33 @@ x ≱ y = y ≰ x
 sum0 : (ℕ -> ℝ) -> ℕ -> ℝ
 sum0 a 0 = zeroℝ
 sum0 a (suc n) = sum0 a n + a n
--- And cannot pattern match here. So let's cheat.
-{-# FOREIGN AGDA2HS
-  sum0 :: (Natural -> ℝ) -> Natural -> ℝ
-  sum0 a n = if (n == 0) then zeroℝ else (sum0 a (n-1) + a (n-1))
-#-}
+-- And cannot pattern match here.
+
+-- https://github.com/agda/agda2hs/issues/117
+-- An idea: let's write another version which doesn't pattern match, and then prove that it's equivalent.
+-- But TERMINATING must be used. (Or what if we have an equal erased one on which we do pattern match?)
+{-# TERMINATING #-}
+sum0' : (ℕ -> ℝ) -> ℕ -> ℝ
+sum0' a 0 = zeroℝ
+sum0' a n = let n-1 = (n ℕ.∸ 1) in sum0' a n-1 + a n-1
+{-# COMPILE AGDA2HS sum0' #-}
+-- But this depends on PR #184.
+
+@0 sum0≡sum0' : ∀ (a : ℕ → ℝ) (n : ℕ) → sum0 a n ≡ sum0' a n
+sum0≡sum0' a zero = refl
+sum0≡sum0' a (suc n) = cong (_+ (a n)) (sum0≡sum0' a n)
 
 sum : (ℕ -> ℝ) -> ℕ -> ℕ -> ℝ
 sum a 0 n = sum0 a n
 sum a (suc i) n = sum0 a n - sum0 a (suc i)
-{-# FOREIGN AGDA2HS
-  sum :: (Natural -> ℝ) -> Natural -> Natural -> ℝ
-  sum a i n = if (i == 0) then (sum0 a n) else (sum0 a n - sum0 a i)
-#-}
+
+-- Similarly:
+sum' : (ℕ -> ℝ) -> ℕ -> ℕ -> ℝ
+sum' a 0 n = sum0' a n
+sum' a i n = sum0' a n - sum0' a i
+{-# COMPILE AGDA2HS sum' #-}
+
+@0 sum≡sum' : ∀ (a : ℕ → ℝ) (i n : ℕ) → sum a i n ≡ sum' a i n
+sum≡sum' a 0 n = sum0≡sum0' a n
+sum≡sum' a (suc i) n = trans (cong (_- (sum0 a (suc i))) (sum0≡sum0' a n))
+                             (cong (λ t → sum0' a n - t) (sum0≡sum0' a (suc i)))

@@ -2,7 +2,7 @@
 -- Inverses require a number of results that rightfully belong in RealProperties.agda,
 -- hence this new file.
 
-{-# OPTIONS --without-K --safe #-}
+-- {-# OPTIONS --without-K --safe #-}
 
 module Inverse where
 
@@ -33,6 +33,8 @@ open import Data.Maybe.Base
 import NonReflectiveQ as ℚ-Solver
 import NonReflectiveZ as ℤ-Solver
 open import Data.List
+
+open import Haskell.Prim.Num
 
 open import ErasureProduct
 open import ExtraProperties
@@ -65,7 +67,7 @@ e-*-inverseʳ p {p≢0} = ℚP.≃-trans (ℚP.*-comm p (erased-1/ p)) (e-*-inve
 -- Helper results for defining inverses
 
 Nₐ : (x : ℝ) -> x ≄0 ->  ℕ
-Nₐ x x≄0 = suc (proj₁ (fast-lemma-2-8-1-if {∣ x ∣} (x≄0⇒pos∣x∣ {x} x≄0)))
+Nₐ x x≄0 = suc (proj₁ (fastLemma281If (abs x) (xNonZeroThenPosAbsx x x≄0)))
 
 abstract
   @0 not0-helper : ∀ (x : ℝ) -> (x≄0 : x ≄0) -> ∀ (n : ℕ) ->
@@ -83,7 +85,7 @@ abstract
       @0 0<∣xₛ∣ : 0ℚᵘ ℚ.< ℚ.∣ xₛ ∣
       0<∣xₛ∣ = begin-strict
         0ℚᵘ     <⟨ ℚP.positive⁻¹ _ ⟩
-        + 1 / N ≤⟨ (ErasureProduct.proj₂ (fast-lemma-2-8-1-if {∣ x ∣} (x≄0⇒pos∣x∣ {x} x≄0))) ((n ℕ.+ N) ℕ.* (N ℕ.* N))
+        + 1 / N ≤⟨ (ErasureProduct.proj₂ (fastLemma281If (abs x) (xNonZeroThenPosAbsx x x≄0))) ((n ℕ.+ N) ℕ.* (N ℕ.* N))
                  (ℕP.≤-trans (ℕP.m≤n*m N {N} ℕP.0<1+n) (ℕP.m≤n*m (N ℕ.* N) {n ℕ.+ N} (subst (0 ℕ.<_) (ℕP.+-comm N n) ℕP.0<1+n))) ⟩
         ℚ.∣ xₛ ∣  ∎
 
@@ -104,7 +106,7 @@ abstract
 --TODO: see whether it could be hidden from global scope.
 abstract
   @0 lesser-helper-2 : ∀ (x : ℝ) -> (x≄0 : x ≄0) -> ∀ (n : ℕ) -> (+ 1 / (Nₐ x x≄0)) ℚ.≤ ℚ.∣ seq x ((n ℕ.+ (Nₐ x x≄0)) ℕ.* ((Nₐ x x≄0) ℕ.* (Nₐ x x≄0))) ∣
-  lesser-helper-2 x x≄0 n = proj₂ (fast-lemma-2-8-1-if {∣ x ∣} (x≄0⇒pos∣x∣ {x} x≄0)) ((n ℕ.+ N) ℕ.* (N ℕ.* N)) lesser-helper
+  lesser-helper-2 x x≄0 n = proj₂ (fastLemma281If (abs x) (xNonZeroThenPosAbsx x x≄0)) ((n ℕ.+ N) ℕ.* (N ℕ.* N)) lesser-helper
     where
     N : ℕ
     N = Nₐ x x≄0
@@ -150,11 +152,11 @@ abstract
       lesser-helper = ℕP.≤-trans (ℕP.m≤n+m N n) (ℕP.m≤m*n (n ℕ.+ N) {N ℕ.* N} ℕP.0<1+n)
 
       lesser-helper-2 : (+ 1 / N) ℚ.≤ ℚ.∣ xₛ ∣
-      lesser-helper-2 = proj₂ (fast-lemma-2-8-1-if {∣ x ∣} (x≄0⇒pos∣x∣ {x} x≄0)) ((n ℕ.+ N) ℕ.* (N ℕ.* N)) lesser-helper
+      lesser-helper-2 = proj₂ (fastLemma281If {∣ x ∣} (xNonZeroThenPosAbsx {x} x≄0)) ((n ℕ.+ N) ℕ.* (N ℕ.* N)) lesser-helper
 -}
 
 -- Definition of the multiplicative inverse function _⁻¹
-_⁻¹ : (x : ℝ) -> x ≄ 0ℝ -> ℝ
+_⁻¹ : (x : ℝ) -> x ≄ zeroℝ -> ℝ
 seq ((x ⁻¹) x≄0) n = (erased-1/ xₛ) {not0-helper x x≄0 n}
   where
     open ℚP.≤-Reasoning
@@ -228,9 +230,9 @@ reg ((x ⁻¹) x≄0) (suc k₁) (suc k₂) = begin
 
 -- Properties of _⁻¹
 
-@0 *-inverseʳ : ∀ x -> (x≄0 : x ≄0) -> x * ((x ⁻¹) x≄0) ≃ 1ℝ
+@0 *-inverseʳ : ∀ x -> (x≄0 : x ≄0) -> x * ((x ⁻¹) x≄0) ≃ oneℝ
 *-inverseʳ x x≄0 = *≃* λ @0 {(suc k₁) ->
-                     let n = suc k₁; x⁻¹ = (x ⁻¹) x≄0; k = K x ℕ.⊔ K x⁻¹
+                     let n = suc k₁; x⁻¹ = (x ⁻¹) x≄0; k = fK x ℕ.⊔ fK x⁻¹
                             ; N = Nₐ x x≄0; x₂ₖₙ = seq x (2 ℕ.* k ℕ.* n)
                             ; xₛ = seq x ((2 ℕ.* k ℕ.* n ℕ.+ N) ℕ.* (N ℕ.* N))
                             ; y₂ₖₙ = (erased-1/ xₛ) {not0-helper x x≄0 (2 ℕ.* k ℕ.* n)} in begin
@@ -243,7 +245,7 @@ reg ((x ⁻¹) x≄0) (suc k₁) (suc k₂) = begin
                                                                    (ℚP.∣p*q∣≃∣p∣*∣q∣ y₂ₖₙ (x₂ₖₙ ℚ.- xₛ))⟩
   ℚ.∣ y₂ₖₙ ∣  ℚ.* ℚ.∣ x₂ₖₙ ℚ.- xₛ ∣                             ≤⟨ ℚ-*-mono-≤ _ _
                                                                    (ℚP.≤-trans (ℚP.<⇒≤ (canonical-strict-upper-bound x⁻¹ (2 ℕ.* k ℕ.* n)))
-                                                                               (p≤q⇒p/r≤q/r (+ K x⁻¹) (+ k) 1 (ℤ.+≤+ (ℕP.m≤n⊔m (K x) (K x⁻¹)))))
+                                                                               (p≤q⇒p/r≤q/r (+ fK x⁻¹) (+ k) 1 (ℤ.+≤+ (ℕP.m≤n⊔m (fK x) (fK x⁻¹)))))
                                                                    (reg x (2 ℕ.* k ℕ.* n) ((2 ℕ.* k ℕ.* n ℕ.+ N) ℕ.* (N ℕ.* N))) ⟩
   + k / 1 ℚ.* (+ 1 / (2 ℕ.* k ℕ.* n) ℚ.+
   + 1 / ((2 ℕ.* k ℕ.* n ℕ.+ N) ℕ.* (N ℕ.* N)))                  ≤⟨ ℚP.*-monoʳ-≤-nonNeg {+ k / 1} _ (ℚP.+-monoʳ-≤ (+ 1 / (2 ℕ.* k ℕ.* n))
@@ -267,21 +269,21 @@ reg ((x ⁻¹) x≄0) (suc k₁) (suc k₂) = begin
         ; Κ     to κ
         )
 
-@0 *-inverseˡ : ∀ x -> (x≄0 : x ≄0) -> ((x ⁻¹) x≄0) * x ≃ 1ℝ
+@0 *-inverseˡ : ∀ x -> (x≄0 : x ≄0) -> ((x ⁻¹) x≄0) * x ≃ oneℝ
 *-inverseˡ x x≄0 = let x⁻¹ = (x ⁻¹) x≄0 in begin
   x⁻¹ * x ≈⟨ *-comm x⁻¹ x ⟩
   x * x⁻¹ ≈⟨ *-inverseʳ x x≄0 ⟩
-  1ℝ       ∎
+  oneℝ       ∎
   where open ≃-Reasoning
 
 abstract
-  @0 ⁻¹-unique : ∀ t x -> (x≄0 : x ≄0) -> t * x ≃ 1ℝ -> t ≃ (x ⁻¹) x≄0
+  @0 ⁻¹-unique : ∀ t x -> (x≄0 : x ≄0) -> t * x ≃ oneℝ -> t ≃ (x ⁻¹) x≄0
   ⁻¹-unique t x x≄0 tx=1 = let x⁻¹ = (x ⁻¹) x≄0 in begin 
-    t             ≈⟨ ≃-symm (*-identityʳ t) ⟩
-    t * 1ℝ        ≈⟨ *-congˡ (≃-symm (*-inverseʳ x x≄0)) ⟩
-    t * (x * x⁻¹) ≈⟨ ≃-symm (*-assoc t x x⁻¹) ⟩
+    t             ≈⟨ ≃-sym (*-identityʳ t) ⟩
+    t * oneℝ        ≈⟨ *-congˡ (≃-sym (*-inverseʳ x x≄0)) ⟩
+    t * (x * x⁻¹) ≈⟨ ≃-sym (*-assoc t x x⁻¹) ⟩
     (t * x) * x⁻¹ ≈⟨ *-congʳ tx=1 ⟩
-    1ℝ * x⁻¹      ≈⟨ *-identityˡ x⁻¹ ⟩
+    oneℝ * x⁻¹      ≈⟨ *-identityˡ x⁻¹ ⟩
     x⁻¹            ∎
     where open ≃-Reasoning
 
@@ -291,51 +293,51 @@ abstract
     open ≃-Reasoning
     x⁻¹ = (x ⁻¹) x≄0
     y⁻¹ = (y ⁻¹) y≄0
-    lem : x⁻¹ * y ≃ 1ℝ
+    lem : x⁻¹ * y ≃ oneℝ
     lem = begin
-      x⁻¹ * y ≈⟨ *-congˡ (≃-symm x≃y) ⟩
+      x⁻¹ * y ≈⟨ *-congˡ (≃-sym x≃y) ⟩
       x⁻¹ * x ≈⟨ *-inverseˡ x x≄0 ⟩
-      1ℝ       ∎
+      oneℝ       ∎
 
-posx⇒posx⁻¹ : ∀ {x} -> (x≄0 : x ≄0) -> Positive x -> Positive ((x ⁻¹) x≄0)
-posx⇒posx⁻¹ {x} x≄0 posx = let fromPosx = fast-lemma-2-8-1-if posx; M = suc (proj₁ fromPosx) in
-                           lemma-2-8-1-onlyif (ℕ.pred (K x ℕ.⊔ M) , λ @0 {(suc k₁) m≥Kₓ⊔M ->
+posx⇒posx⁻¹ : ∀ {x} -> (x≄0 : x ≄ zeroℝ) -> Positive x -> Positive ((x ⁻¹) x≄0)
+posx⇒posx⁻¹ {x} x≄0 posx = let fromPosx = fastLemma281If x posx; M = suc (proj₁ fromPosx) in
+                           lemma281OnlyIf ((x ⁻¹) x≄0) (ℕ.pred (fK x ℕ.⊔ M) :&: λ @0 {(suc k₁) m≥Kₓ⊔M ->
                            let m = suc k₁; N = Nₐ x x≄0; xₛ = seq x ((m ℕ.+ N) ℕ.* (N ℕ.* N)); yₘ = (erased-1/ xₛ) {not0-helper x x≄0 m} in begin
- + 1 / (K x ℕ.⊔ M) ≤⟨ q≤r⇒+p/r≤+p/q 1 (K x) (K x ℕ.⊔ M) (ℕP.m≤m⊔n (K x) M) ⟩
- + 1 / (K x)       ≤⟨ +p≤+q⇒1/q≤1/p {xₛ} {+ K x / 1}
+ + 1 / (fK x ℕ.⊔ M) ≤⟨ q≤r⇒+p/r≤+p/q 1 (fK x) (fK x ℕ.⊔ M) (ℕP.m≤m⊔n (fK x) M) ⟩
+ + 1 / (fK x)       ≤⟨ +p≤+q⇒1/q≤1/p {xₛ} {+ fK x / 1}
                       (ℚ.positive (ℚP.<-≤-trans (ℚP.positive⁻¹ {+ 1 / M} _) (proj₂ fromPosx ((m ℕ.+ N) ℕ.* (N ℕ.* N))
-                                  (ℕP.≤-trans (ℕP.≤-trans (ℕP.≤-trans (ℕP.m≤n⊔m (K x) M) m≥Kₓ⊔M) (ℕP.m≤m+n m N)) (ℕP.m≤m*n (m ℕ.+ N) {N ℕ.* N} ℕP.0<1+n))))) _
+                                  (ℕP.≤-trans (ℕP.≤-trans (ℕP.≤-trans (ℕP.m≤n⊔m (fK x) M) m≥Kₓ⊔M) (ℕP.m≤m+n m N)) (ℕP.m≤m*n (m ℕ.+ N) {N ℕ.* N} ℕP.0<1+n))))) _
                       (ℚP.≤-trans (p≤∣p∣ xₛ) (ℚP.<⇒≤ (canonical-strict-upper-bound x ((m ℕ.+ N) ℕ.* (N ℕ.* N))))) ⟩
  yₘ                  ∎})
   where open ℚP.≤-Reasoning
-
-@0 neg-distrib-⁻¹ : ∀ {x} -> (x≄0 : x ≄0) -> - ((x ⁻¹) x≄0) ≃ ((- x) ⁻¹) (x≄0⇒-x≄0 x x≄0)
-neg-distrib-⁻¹ {x} x≄0 = let x⁻¹ = (x ⁻¹) x≄0 in ⁻¹-unique (- x⁻¹) (- x) (x≄0⇒-x≄0 x x≄0) (begin
-  (- x⁻¹) * (- x) ≈⟨ ≃-symm (neg-distribˡ-* x⁻¹ (- x)) ⟩
-  - (x⁻¹ * (- x)) ≈⟨ -‿cong (≃-symm (neg-distribʳ-* x⁻¹ x)) ⟩
+{-
+@0 neg-distrib-⁻¹ : ∀ {x : ℝ} -> (x≄0 : x ≄0) -> negate ((x ⁻¹) x≄0) ≃ ((negate x) ⁻¹) (x≄0⇒-x≄0 x x≄0)
+neg-distrib-⁻¹ {x} x≄0 = let x⁻¹ = (x ⁻¹) x≄0 in ⁻¹-unique (negate x⁻¹) (negate x) (x≄0⇒-x≄0 x x≄0) {!begin-equality
+  (- x⁻¹) * (- x) ≈⟨ ≃-sym (neg-distribˡ-* x⁻¹ (- x)) ⟩
+  - (x⁻¹ * (- x)) ≈⟨ -‿cong (≃-sym (neg-distribʳ-* x⁻¹ x)) ⟩
   - - (x⁻¹ * x)   ≈⟨ neg-involutive (x⁻¹ * x) ⟩
   x⁻¹ * x         ≈⟨ *-inverseˡ x x≄0 ⟩
-  1ℝ               ∎)
-  where open ≃-Reasoning
+  oneℝ               ∎!}
+  where open ≤-Reasoning
 
 @0 negx⇒negx⁻¹ : ∀ {x} -> (x≄0 : x ≄0) -> Negative x -> Negative ((x ⁻¹) x≄0)
-negx⇒negx⁻¹ {x} x≄0 negx = let x⁻¹ = (x ⁻¹) x≄0; -x⁻¹ = ((- x) ⁻¹) (x≄0⇒-x≄0 x x≄0) in
-                           pos-cong { -x⁻¹} { - x⁻¹} (≃-symm (neg-distrib-⁻¹ {x} x≄0)) (posx⇒posx⁻¹ { - x} (x≄0⇒-x≄0 x x≄0) negx)
+negx⇒negx⁻¹ {x} x≄0 negx = let x⁻¹ = (x ⁻¹) x≄0; -x⁻¹ = ((negate x) ⁻¹) (x≄0⇒-x≄0 x x≄0) in
+                           posCong (-x⁻¹) (negate x⁻¹) (≃-sym (neg-distrib-⁻¹ {x} x≄0)) (posx⇒posx⁻¹ { negate x} (x≄0⇒-x≄0 x x≄0) negx)
 
-@0 x<0⇒x⁻¹<0 : ∀ {x} -> (x≄0 : x ≄0) -> x < 0ℝ -> (x ⁻¹) x≄0 < 0ℝ
+@0 x<0⇒x⁻¹<0 : ∀ {x} -> (x≄0 : x ≄0) -> x < zeroℝ -> (x ⁻¹) x≄0 < zeroℝ
 x<0⇒x⁻¹<0 {x} x≄0 x<0 = let x⁻¹ = (x ⁻¹) x≄0 in
-                        negx⇒x<0 {x⁻¹} (negx⇒negx⁻¹ {x} x≄0 (x<0⇒negx {x} x<0))
+                        negxThenxLtZero x⁻¹ (negx⇒negx⁻¹ {x} x≄0 (xLtZeroThenNegx x x<0))
 
 -- have to used erased resp here
 x<y∧posx,y⇒y⁻¹<x⁻¹ : ∀ {x y} -> x < y -> (x≄0 : x ≄0) -> (y≄0 : y ≄0) -> Positive x -> Positive y ->
                      (y ⁻¹) y≄0 < (x ⁻¹) x≄0
-x<y∧posx,y⇒y⁻¹<x⁻¹ {x} {y} x<y x≄0 y≄0 posx posy = <-respˡ-≃0 {x⁻¹} {x * x⁻¹ * y⁻¹} {y⁻¹} (≃-trans {x * x⁻¹ * y⁻¹} {1ℝ * y⁻¹} {y⁻¹} (*-congʳ (*-inverseʳ x x≄0)) (*-identityˡ y⁻¹))
-                                                     (<-respʳ-≃0 {x * x⁻¹ * y⁻¹} {y * x⁻¹ * y⁻¹} {x⁻¹}
+x<y∧posx,y⇒y⁻¹<x⁻¹ {x} {y} x<y x≄0 y≄0 posx posy = ltRespLEq {x⁻¹} {x * x⁻¹ * y⁻¹} {y⁻¹} (≃-trans {x * x⁻¹ * y⁻¹} {oneℝ * y⁻¹} {y⁻¹} (*-congʳ (*-inverseʳ x x≄0)) (*-identityˡ y⁻¹))
+                                                     (ltRespREq {x * x⁻¹ * y⁻¹} {y * x⁻¹ * y⁻¹} {x⁻¹}
                                                                      (≃-trans {y * x⁻¹ * y⁻¹} {x⁻¹ * (y * y⁻¹)} {x⁻¹} (≃-trans (*-congʳ (*-comm y x⁻¹)) (*-assoc x⁻¹ y y⁻¹)) (≃-trans (*-congˡ (*-inverseʳ y y≄0)) (*-identityʳ x⁻¹)))
-                                                                     (*-monoˡ-<-pos {y⁻¹} (posx⇒posx⁻¹ {y} y≄0 posy) {x * x⁻¹} {y * x⁻¹}
-                                                                       (*-monoˡ-<-pos {x⁻¹} (posx⇒posx⁻¹ {x} x≄0 posx) x<y)))
+                                                                     (multiMonoLLtPos {y⁻¹} (posx⇒posx⁻¹ {y} y≄0 posy) {x * x⁻¹} {y * x⁻¹}
+                                                                       (multiMonoLLtPos {x⁻¹} (posx⇒posx⁻¹ {x} x≄0 posx) x<y)))
   {-begin-strict
-  y⁻¹             ≈⟨ ≃-symm (≃-trans {x * x⁻¹ * y⁻¹} {1ℝ * y⁻¹} {y⁻¹} (*-congʳ (*-inverseʳ x x≄0)) (*-identityˡ y⁻¹)) ⟩
+  y⁻¹             ≈⟨ ≃-sym (≃-trans {x * x⁻¹ * y⁻¹} {oneℝ * y⁻¹} {y⁻¹} (*-congʳ (*-inverseʳ x x≄0)) (*-identityˡ y⁻¹)) ⟩
   x * x⁻¹ * y⁻¹   <⟨ *-monoˡ-<-pos {y⁻¹} (posx⇒posx⁻¹ {y} y≄0 posy) {x * x⁻¹} {y * x⁻¹}
                      (*-monoˡ-<-pos {x⁻¹} (posx⇒posx⁻¹ {x} x≄0 posx) x<y) ⟩
   y * x⁻¹ * y⁻¹   ≈⟨ ≃-trans (*-congʳ (*-comm y x⁻¹)) (*-assoc x⁻¹ y y⁻¹) ⟩
@@ -348,11 +350,12 @@ x<y∧posx,y⇒y⁻¹<x⁻¹ {x} {y} x<y x≄0 y≄0 posx posy = <-respˡ-≃0 {
 
 @0 ⁻¹-involutive : ∀ {x} -> (x≄0 : x ≄0) -> (x⁻¹≄0 : (x ⁻¹) x≄0 ≄0) ->
                 (((x ⁻¹) x≄0) ⁻¹) x⁻¹≄0 ≃ x
-⁻¹-involutive {x} x≄0 x⁻¹≄0 = let x⁻¹ = (x ⁻¹) x≄0 in ≃-symm (⁻¹-unique x x⁻¹ x⁻¹≄0 (*-inverseʳ x x≄0))
+⁻¹-involutive {x} x≄0 x⁻¹≄0 = let x⁻¹ = (x ⁻¹) x≄0 in ≃-sym (⁻¹-unique x x⁻¹ x⁻¹≄0 (*-inverseʳ x x≄0))
 
-@0 0<x⇒0<x⁻¹ : ∀ {x} -> (x≄0 : x ≄0) -> 0ℝ < x -> 0ℝ < (x ⁻¹) x≄0
-0<x⇒0<x⁻¹ {x} x≄0 0<x = posx⇒0<x {(x ⁻¹) x≄0} (posx⇒posx⁻¹ {x} x≄0 (0<x⇒posx 0<x))
+@0 0<x⇒0<x⁻¹ : ∀ {x} -> (x≄0 : x ≄0) -> zeroℝ < x -> zeroℝ < (x ⁻¹) x≄0
+0<x⇒0<x⁻¹ {x} x≄0 0<x = posxThenZeroLtx ((x ⁻¹) x≄0) (posx⇒posx⁻¹ {x} x≄0 (zeroLtxThenPosx 0<x))
 
 @0 ⁻¹-involutive-default : ∀ {x} -> (x≄0 : x ≄0) ->
                 (((x ⁻¹) x≄0) ⁻¹) ([ (λ x<0 -> inj₁ (x<0⇒x⁻¹<0 {x} x≄0 x<0)) , (λ 0<x -> inj₂ (0<x⇒0<x⁻¹ {x} x≄0 0<x))]′ x≄0) ≃ x
 ⁻¹-involutive-default {x} x≄0 = ⁻¹-involutive {x} x≄0 ([ (λ x<0 -> inj₁ (x<0⇒x⁻¹<0 {x} x≄0 x<0)) , (λ 0<x -> inj₂ (0<x⇒0<x⁻¹ {x} x≄0 0<x))]′ x≄0)
+-}

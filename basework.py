@@ -7,6 +7,7 @@ import re
 from string import whitespace  # a string containing all whitespace characters
 import os
 import yaml
+from sys import argv
 
 inQuotes = re.compile('"(.*?)"')
 
@@ -96,3 +97,27 @@ def rewriteFile(name: str, base: str, modules: List[str], imports: List[str], ru
                 line = oldf.readline()
     # and we replace the original file with the `_tmp` one
     os.replace(tempFileName, fileName)
+
+# Rewrites all the files based on the config file YAML provided with a filename (_with_ the `.yaml` extension).
+def main(configFileName: str) -> None:
+    with open(configFileName, 'r') as f:
+        conf = yaml.safe_load(f)
+    base: str
+    base = conf["base"]
+    modules: List[str]
+    modules = conf["modules"]
+    imports: List[str]
+    imports = conf["imports"]
+    rules: List[Tuple[str, str]]
+    rules = parseBase(base)
+        
+    for moduleName in conf["modules"]:
+        print("Rewriting "+moduleName+".hs")
+        rewriteFile(moduleName, base, modules, imports, rules)
+
+if __name__ == "__main__":
+    configFileName: str
+    if 2 == len(argv): configFileName = argv[1]
+    else: configFileName = input("Enter the name of the config file: ")
+    print("Using config file "+configFileName+'.')
+    main(configFileName)
