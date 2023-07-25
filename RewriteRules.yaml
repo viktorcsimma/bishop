@@ -1,133 +1,125 @@
 # Rewrite rules for the `bishop` project.
 
 # First, we specify how to handle Prelude.
-#prelude:
-#  explicit: true
-#  hiding: [seq]
+prelude:
+  implicit: true
+  hiding:           # if implicit is true
+    - seq
+    - <
+    - ">"           # this prints () for some reason without the quotation marks
+
+  #using:           # if implicit is false
+  #  - _+_
+  #  - Num
 
 #Then the rules themselves.
-#rules:
+rules:
 
-# We have to include these so that Num and Either are written to the import list of Prelude.
-- from: Haskell.Prim.Num.Num
-  to: Num
-  importing: Prelude
-- from: Haskell.Prim.Either.Either
-  to: Either
-  importing: Prelude
-# And for some reason it doesn't see these by default either, if not included in Prelude's import list.
-- from: Haskell.Prim.Num.Num.fromInteger
-  to: fromInteger
-  importing: Prelude
-- from: Haskell.Prim.Num.Num.signum
-  to: signum
-  importing: Prelude
+  # The rational type.
+  - from: Data.Rational.Unnormalised.Base.ℚᵘ
+    to: Rational
+    importing: Data.Ratio
 
-# The rational type.
-- from: Data.Rational.Unnormalised.Base.ℚᵘ
-  to: Rational
-  importing: Data.Ratio
+  # Arithmetic operators.
+  # Note: Prelude has to be specified too!
+  - from: Agda.Builtin.Nat._+_
+    to: _+_
+    importing: Prelude
+  - from: Agda.Builtin.Nat._*_
+    to: _*_
+    importing: Prelude
+  - from: Agda.Builtin.Nat.-_
+    to: negate
+    importing: Prelude
+  - from: Agda.Builtin.Nat._-_
+    to: _-_
+    importing: Prelude
+  - from: Data.Nat.Base._⊔_
+    to: max
+    importing: Prelude
 
-# Arithmetic operators.
-# Note: Prelude has to be specified too!
-- from: Agda.Builtin.Nat._+_
-  to: _+_
-  importing: Prelude
-- from: Agda.Builtin.Nat._*_
-  to: _*_
-  importing: Prelude
-- from: Agda.Builtin.Nat.-_
-  to: negate
-  importing: Prelude
-- from: Agda.Builtin.Nat._-_
-  to: _-_
-  importing: Prelude
-- from: Data.Nat.Base._⊔_
-  to: max
-  importing: Prelude
+  - from: Agda.Builtin.Integer._+_
+    to: _+_
+    importing: Prelude
+  - from: Data.Integer.Base._*_
+    to: _*_
+    importing: Prelude
+  - from: Agda.Builtin.Integer.-_
+    to: negate
+    importing: Prelude
+  - from: Agda.Builtin.Integer._-_
+    to: _-_
+    importing: Prelude
 
-- from: Agda.Builtin.Integer._+_
-  to: _+_
-  importing: Prelude
-- from: Data.Integer.Base._*_
-  to: _*_
-  importing: Prelude
-- from: Agda.Builtin.Integer.-_
-  to: negate
-  importing: Prelude
-- from: Agda.Builtin.Integer._-_
-  to: _-_
-  importing: Prelude
+  - from: Data.Rational.Unnormalised.Base._+_
+    to: _+_
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base._*_
+    to: _*_
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base.-_
+    to: negate
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base._-_
+    to: _-_
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base._/_
+    to: _//_
+    importing: Base
+  - from: Data.Rational.Unnormalised.Base._⊔_
+    to: max
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base._⊓_
+    to: min
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base.∣_∣
+    to: abs
+    importing: Prelude
+  - from: Data.Integer.Base.∣_∣
+    to: intAbs
+    importing: Base
 
-- from: Data.Rational.Unnormalised.Base._+_
-  to: _+_
-  importing: Prelude
-- from: Data.Rational.Unnormalised.Base._*_
-  to: _*_
-  importing: Prelude
-- from: Data.Rational.Unnormalised.Base.-_
-  to: negate
-  importing: Prelude
-- from: Data.Rational.Unnormalised.Base._-_
-  to: _-_
-  importing: Prelude
-- from: Data.Rational.Unnormalised.Base._/_
-  to: _//_
-  importing: Base
-- from: Data.Rational.Unnormalised.Base._⊔_
-  to: max
-  importing: Prelude
-- from: Data.Rational.Unnormalised.Base._⊓_
-  to: min
-  importing: Prelude
-- from: Data.Rational.Unnormalised.Base.∣_∣
-  to: abs
-  importing: Prelude
-- from: Data.Integer.Base.∣_∣
-  to: intAbs
-  importing: Base
+  # Standard library functions related to naturals and integers.
+  - from: Agda.Builtin.Nat.Nat.suc
+    to: suc
+    importing: Base
+  - from: Data.Nat.Base.pred
+    to: predNat
+    importing: Base
+  - from: Agda.Builtin.Int.Int.pos
+    to: toInteger
+    importing: Prelude
+  - from: Data.Integer.DivMod._divℕ_
+    to: divNat
+    importing: Base
+  - from: Data.Nat.DivMod._/_
+    to: div
+    importing: Prelude
 
-# Standard library functions related to naturals and integers.
-- from: Agda.Builtin.Nat.Nat.suc
-  to: suc
-  importing: Base
-- from: Data.Nat.Base.pred
-  to: predNat
-  importing: Base
-- from: Agda.Builtin.Int.Int.pos
-  to: toInteger
-  importing: Prelude
-- from: Data.Integer.DivMod._divℕ_
-  to: divNat
-  importing: Base
-- from: Data.Nat.DivMod._/_
-  to: div
-  importing: Prelude
+  # Standard library functions related to rationals.
+  - from: Data.Rational.Unnormalised.Base.ℚᵘ.numerator
+    to: numerator
+    importing: Data.Ratio
+  - from: Data.Rational.Unnormalised.Base.ℚᵘ.denominator
+    to: denominatorNat
+    importing: Base       #the Base version returns a Natural
+  - from: Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1
+    to: denominatorMinus1                                # this is not too pretty now, but that's a temporary solution until denominatorℕ gets fixed
+    importing: Base
 
-# Standard library functions related to rationals.
-- from: Data.Rational.Unnormalised.Base.ℚᵘ.numerator
-  to: numerator
-  importing: Data.Ratio
-- from: Data.Rational.Unnormalised.Base.ℚᵘ.denominator
-  to: denominatorNat
-  importing: Base       #the Base version returns a Natural
-- from: Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1
-  to: denominatorMinus1                                # this is not too pretty now, but that's a temporary solution until denominatorℕ gets fixed
-  importing: Base
-
-# For '-ed functions in our own modules.
-- from: ExtraProperties.fastArchimedeanℚ
-  to: archimedeanℚ'
-  importing: ExtraProperties
-- from: ExtraProperties.fastArchimedeanℚ₂
-  to: archimedeanℚ₂'
-  importing: ExtraProperties
-- from: RealProperties.fastEqualityLemmaIf
-  to: equalityLemmaIf'
-  importing: RealProperties
-- from: RealProperties.fastLemma282If
-  to: RealProperties.lemma282If'
-  importing: RealProperties
-- from: RealProperties.zeroLtpThenZeroLtToRealp
-  to: zeroLtpThenZeroLtToRealp'
-  importing: RealProperties
+  # For '-ed functions in our own modules.
+  - from: ExtraProperties.fastArchimedeanℚ
+    to: archimedeanℚ'
+    importing: ExtraProperties
+  - from: ExtraProperties.fastArchimedeanℚ₂
+    to: archimedeanℚ₂'
+    importing: ExtraProperties
+  - from: RealProperties.fastEqualityLemmaIf
+    to: equalityLemmaIf'
+    importing: RealProperties
+  - from: RealProperties.fastLemma282If
+    to: RealProperties.lemma282If'
+    importing: RealProperties
+  - from: RealProperties.zeroLtpThenZeroLtToRealp
+    to: zeroLtpThenZeroLtToRealp'
+    importing: RealProperties

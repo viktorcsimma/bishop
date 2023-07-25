@@ -4,8 +4,6 @@
 
 module Real where
 
--- {-# FOREIGN AGDA2HS {-# LANGUAGE TypeOperators #-} #-}          -- maybe for _<_
-
 open import Algebra
 open import Data.Bool.Base using (Bool; if_then_else_)
 -- open import Function.Base using (_∘_)

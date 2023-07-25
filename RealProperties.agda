@@ -6,6 +6,8 @@
 
 module RealProperties where
 
+{-# FOREIGN AGDA2HS {-# LANGUAGE TypeOperators #-} #-}
+
 open import Algebra
 open import Data.Bool.Base using (Bool; if_then_else_)
 open import Function.Base using (_∘_)
@@ -1469,7 +1471,7 @@ lemma281OnlyIf x (km1 :&: proof) = MkPos (k :&: (begin-strict
 @0 nonNeg-unpack : {x : ℝ} → NonNegative x → (∀ (n : ℕ) -> {@0 n≢0 : n ≢0} -> seq x n ℚ.≥ ℚ.- ((+ 1 / n) {n≢0}))
 nonNeg-unpack (nonNeg* nonx) = nonx
 
-lemma282If : ∀ {x : ℝ} -> @0 NonNegative x -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
+lemma282If : ∀ {@0 x : ℝ} -> @0 NonNegative x -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
                  Σ0 ℕ λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0})
 lemma282If {x} nonNegx (suc k₁) = n :&: (_ , lem)
   where
@@ -1483,17 +1485,17 @@ lemma282If {x} nonNegx (suc k₁) = n :&: (_ , lem)
                     ℚ.- (+ 1 / m) ≤⟨ (nonNeg-unpack nonNegx) m ⟩
                     seq x m        ∎
 
-lemma282If' : ∀ (x : ℝ) -> @0 NonNegative x -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
+lemma282If' : ∀ (@0 x : ℝ) -> @0 NonNegative x -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
                  Σ0 ℕ (λ _ → ⊤)
 lemma282If' x _ n = n :&: tt
 {-# COMPILE AGDA2HS lemma282If' #-}
 
-proj₁lemma282If≡proj₁lemma282If' : ∀ (x : ℝ) -> (@0 nonNegx : NonNegative x) -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
+proj₁lemma282If≡proj₁lemma282If' : ∀ (@0 x : ℝ) -> (@0 nonNegx : NonNegative x) -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
                                         proj₁ (lemma282If {x} nonNegx n {n≢0}) ≡ proj₁ (lemma282If' x nonNegx n {n≢0})
 proj₁lemma282If≡proj₁lemma282If' x nonNegx (suc k₁) = refl
 
 abstract
-  fastLemma282If : ∀ {x : ℝ} -> @0 NonNegative x -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
+  fastLemma282If : ∀ {@0 x : ℝ} -> @0 NonNegative x -> ∀ (n : ℕ) -> {@0 n≢0 : n ≢0} ->
                         Σ0 ℕ (λ (Nₙ : ℕ) -> Nₙ ≢0 × (∀ (m : ℕ) -> m ℕ.≥ Nₙ -> seq x m ℚ.≥ ℚ.- (+ 1 / n) {n≢0}))
   fastLemma282If = lemma282If
 
