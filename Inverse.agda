@@ -6,6 +6,8 @@
 
 module Inverse where
 
+{-# FOREIGN AGDA2HS {-# LANGUAGE TypeOperators #-} #-}
+
 open import Algebra
 open import Data.Bool.Base using (Bool; if_then_else_)
 open import Function.Base using (_∘_)
@@ -34,6 +36,7 @@ import NonReflectiveQ as ℚ-Solver
 import NonReflectiveZ as ℤ-Solver
 open import Data.List
 
+open import Agda.Builtin.Unit
 open import Haskell.Prim.Num
 
 open import ErasureProduct
@@ -42,6 +45,7 @@ open import Real
 open import RealProperties
 
 -- We have to substitute some functions from the standard library with erasure-compatible versions.
+-- In RewriteRules.yaml, this is rewritten to recip from Prelude.
 infix  8 erased-1/_
 erased-1/_ : (p : ℚᵘ) → @0 .{ℤ.∣ ↥ p ∣ ≢0} → ℚᵘ
 erased-1/_ (mkℚᵘ +[1+ n ] d) = mkℚᵘ +[1+ d ] n
@@ -66,18 +70,19 @@ e-*-inverseʳ p {p≢0} = ℚP.≃-trans (ℚP.*-comm p (erased-1/ p)) (e-*-inve
 
 -- Helper results for defining inverses
 
-Nₐ : (x : ℝ) -> x ≄0 ->  ℕ
-Nₐ x x≄0 = suc (proj₁ (fastLemma281If (abs x) (xNonZeroThenPosAbsx x x≄0)))
+na : (x : ℝ) -> x ≄ zeroℝ -> ℕ
+na x xNeq0 = suc (proj₁ (fastLemma281If (abs x) (xNonZeroThenPosAbsx x xNeq0)))
+{-# COMPILE AGDA2HS na #-}
 
 abstract
   @0 not0-helper : ∀ (x : ℝ) -> (x≄0 : x ≄0) -> ∀ (n : ℕ) ->
-                ℤ.∣ ↥ (seq x ((n ℕ.+ (Nₐ x x≄0)) ℕ.* ((Nₐ x x≄0) ℕ.* (Nₐ x x≄0)))) ∣ ≢0
+                ℤ.∣ ↥ (seq x ((n ℕ.+ (na x x≄0)) ℕ.* ((na x x≄0) ℕ.* (na x x≄0)))) ∣ ≢0
   not0-helper x x≄0 n = ℚP.p≄0⇒∣↥p∣≢0 xₛ (ℚ≠-helper xₛ ([ left , right ]′ (ℚP.∣p∣≡p∨∣p∣≡-p xₛ)))
     where
       open ℚP.≤-Reasoning
 
       N : ℕ
-      N = Nₐ x x≄0
+      N = na x x≄0
 
       xₛ : ℚᵘ
       xₛ = seq x ((n ℕ.+ N) ℕ.* (N ℕ.* N))
@@ -105,18 +110,18 @@ abstract
 --Had to declare separately as abstract in order to typecheck fast enough.
 --TODO: see whether it could be hidden from global scope.
 abstract
-  @0 lesser-helper-2 : ∀ (x : ℝ) -> (x≄0 : x ≄0) -> ∀ (n : ℕ) -> (+ 1 / (Nₐ x x≄0)) ℚ.≤ ℚ.∣ seq x ((n ℕ.+ (Nₐ x x≄0)) ℕ.* ((Nₐ x x≄0) ℕ.* (Nₐ x x≄0))) ∣
+  @0 lesser-helper-2 : ∀ (x : ℝ) -> (x≄0 : x ≄0) -> ∀ (n : ℕ) -> (+ 1 / (na x x≄0)) ℚ.≤ ℚ.∣ seq x ((n ℕ.+ (na x x≄0)) ℕ.* ((na x x≄0) ℕ.* (na x x≄0))) ∣
   lesser-helper-2 x x≄0 n = proj₂ (fastLemma281If (abs x) (xNonZeroThenPosAbsx x x≄0)) ((n ℕ.+ N) ℕ.* (N ℕ.* N)) lesser-helper
     where
     N : ℕ
-    N = Nₐ x x≄0
-    lesser-helper : (Nₐ x x≄0) ℕ.≤ (n ℕ.+ (Nₐ x x≄0)) ℕ.* ((Nₐ x x≄0) ℕ.* (Nₐ x x≄0))
+    N = na x x≄0
+    lesser-helper : (na x x≄0) ℕ.≤ (n ℕ.+ (na x x≄0)) ℕ.* ((na x x≄0) ℕ.* (na x x≄0))
     lesser-helper = ℕP.≤-trans (ℕP.m≤n+m N n) (ℕP.m≤m*n (n ℕ.+ N) {N ℕ.* N} ℕP.0<1+n)
 
 
 abstract
   @0 inverse-helper : ∀ (x : ℝ) -> (x≄0 : x ≄0) -> ∀ (n : ℕ) ->
-                   ℚ.∣ (erased-1/ seq x ((n ℕ.+ (Nₐ x x≄0)) ℕ.* (Nₐ x x≄0 ℕ.* Nₐ x x≄0))) {not0-helper x x≄0 n} ∣ ℚ.≤ + (Nₐ x x≄0) / 1
+                   ℚ.∣ (erased-1/ seq x ((n ℕ.+ (na x x≄0)) ℕ.* (na x x≄0 ℕ.* na x x≄0))) {not0-helper x x≄0 n} ∣ ℚ.≤ + (na x x≄0) / 1
   inverse-helper x x≄0 n = begin
     ℚ.∣ xₛ⁻¹ ∣                             ≈⟨ ℚP.≃-sym (ℚP.*-identityʳ ℚ.∣ xₛ⁻¹ ∣) ⟩
     ℚ.∣ xₛ⁻¹ ∣ ℚ.* 1ℚᵘ                     ≈⟨ ℚP.*-congˡ {ℚ.∣ xₛ⁻¹ ∣} (ℚP.≃-sym (ℚP.*-inverseˡ (+ N / 1))) ⟩
@@ -129,7 +134,7 @@ abstract
       open ℚP.≤-Reasoning
 
       N : ℕ
-      N = Nₐ x x≄0
+      N = na x x≄0
 
       xₛ : ℚᵘ
       xₛ = seq x ((n ℕ.+ N) ℕ.* (N ℕ.* N))
@@ -156,67 +161,83 @@ abstract
 -}
 
 -- Definition of the multiplicative inverse function _⁻¹
-_⁻¹ : (x : ℝ) -> x ≄ zeroℝ -> ℝ
-seq ((x ⁻¹) x≄0) n = (erased-1/ xₛ) {not0-helper x x≄0 n}
+-- Here x ≄ zeroℝ cannot be erased; since the natural in it is used for the computation.
+-- And therefore, sadly, we cannot really define a Fractional instance.
+-- And no copatterns;)
+_\<_ : (x : ℝ) -> x ≄ zeroℝ -> ℝ
+(x \< xNeq0) = Mkℝ sequence proofForSequence
   where
     open ℚP.≤-Reasoning
-    N = Nₐ x x≄0  -- this is where it needs the existence proof from x≄0; that's why it cannot be erased
-    xₛ = seq x ((n ℕ.+ N) ℕ.* (N ℕ.* N))
-reg ((x ⁻¹) x≄0) (suc k₁) (suc k₂) = begin
-  ℚ.∣ yₘ ℚ.- yₙ ∣                                 ≈⟨ ℚP.∣-∣-cong (ℚP.+-cong
-                                                     ((ℚP.≃-trans (ℚP.≃-sym (ℚP.*-identityʳ yₘ)) (ℚP.*-congˡ {yₘ} (ℚP.≃-sym (e-*-inverseˡ xₙ {xₖ≢0 n})))))
-                                                     ((ℚP.-‿cong (ℚP.≃-trans (ℚP.≃-sym (ℚP.*-identityʳ yₙ)) (ℚP.*-congˡ {yₙ} (ℚP.≃-sym (e-*-inverseˡ xₘ {xₖ≢0 m}))))))) ⟩
-  ℚ.∣ yₘ ℚ.* (yₙ ℚ.* xₙ) ℚ.- yₙ ℚ.* (yₘ ℚ.* xₘ) ∣ ≈⟨ ℚP.∣-∣-cong (solve 4 (λ xₘ xₙ yₘ yₙ ->
-                                                     (yₘ ⊗ (yₙ ⊗ xₙ) ⊖ yₙ ⊗ (yₘ ⊗ xₘ)) ⊜ (yₘ ⊗ yₙ ⊗ (xₙ ⊖ xₘ)))
-                                                     ℚP.≃-refl xₘ xₙ yₘ yₙ) ⟩
-  ℚ.∣ yₘ ℚ.* yₙ ℚ.* (xₙ ℚ.- xₘ) ∣                 ≈⟨ ℚP.∣p*q∣≃∣p∣*∣q∣ (yₘ ℚ.* yₙ) (xₙ ℚ.- xₘ) ⟩
-  ℚ.∣ yₘ ℚ.* yₙ ∣ ℚ.* ℚ.∣ xₙ ℚ.- xₘ ∣             ≤⟨ ℚP.≤-trans
-                                                     (ℚP.*-monoʳ-≤-nonNeg {ℚ.∣ yₘ ℚ.* yₙ ∣} _ (reg x ((n ℕ.+ N) ℕ.* (N ℕ.* N)) ((m ℕ.+ N) ℕ.* (N ℕ.* N))))
-                                                     (ℚP.*-monoˡ-≤-nonNeg {+ 1 / ((n ℕ.+ N) ℕ.* (N ℕ.* N)) ℚ.+ + 1 / ((m ℕ.+ N) ℕ.* (N ℕ.* N))} _ ∣yₘ*yₙ∣≤N²) ⟩
-  (+ N / 1) ℚ.* (+ N / 1) ℚ.*
-  ((+ 1 / ((n ℕ.+ N) ℕ.* (N ℕ.* N))) ℚ.+
-   (+ 1 / ((m ℕ.+ N) ℕ.* (N ℕ.* N))))             ≈⟨ ℚ.*≡* (ℤsolve 3 (λ m n N ->
-                                                     ((N :* N) :* ((κ (+ 1) :* ((m :+ N) :* (N :* N))) :+
-                                                     (κ (+ 1) :* ((n :+ N) :* (N :* N))))) :* ((m :+ N) :* (n :+ N)) :=
-                                                     (κ (+ 1) :* (n :+ N) :+ κ (+ 1) :* (m :+ N)) :* (κ (+ 1) :* κ (+ 1) :*
-                                                     (((n :+ N) :* (N :* N)) :* ((m :+ N) :* (N :* N)))))
-                                                     refl (+ m) (+ n) (+ N)) ⟩
 
-  (+ 1 / (m ℕ.+ N)) ℚ.+ (+ 1 / (n ℕ.+ N))         ≤⟨ ℚP.+-mono-≤
-                                                     (q≤r⇒+p/r≤+p/q 1 m (m ℕ.+ N) (ℕP.m≤m+n m N))
-                                                     (q≤r⇒+p/r≤+p/q 1 n (n ℕ.+ N) (ℕP.m≤m+n n N)) ⟩
-  (+ 1 / m) ℚ.+ (+ 1 / n)                          ∎
-  where
-    open ℚP.≤-Reasoning
-    open ℚ-Solver
-    open ℤ-Solver using ()
-      renaming
-        ( solve to ℤsolve
-        ; _⊕_   to _:+_
-        ; _⊗_   to _:*_
-        ; _⊜_   to _:=_
-        ; Κ     to κ
-        )
+    l = na x xNeq0  -- this is where it needs the existence proof from x≄0; that's why it cannot be erased
 
-    N = Nₐ x x≄0
-    m = suc k₁
-    n = suc k₂
+    sequence : ℕ → ℚᵘ
+    sequence n = (erased-1/ xₛ) {not0-helper x xNeq0 n}
+      where
+        xₛ = seq x ((n ℕ.+ l) ℕ.* (l ℕ.* l))
 
-    xₘ = seq x ((m ℕ.+ N) ℕ.* (N ℕ.* N))
-    xₙ = seq x ((n ℕ.+ N) ℕ.* (N ℕ.* N))
+    @0 proofForSequence : (m n : ℕ) {@0 m≢0 : m ≢0} {@0 n≢0 : n ≢0} →
+          ℚ.∣ sequence m ℚ.- sequence n ∣ ℚ.≤
+          (+ 1 / m) {m≢0} ℚ.+ (+ 1 / n) {n≢0}
+    proofForSequence (suc k₁) (suc k₂) = begin
+     ℚ.∣ yₘ ℚ.- yₙ ∣                                 ≈⟨ ℚP.∣-∣-cong (ℚP.+-cong
+                                                          ((ℚP.≃-trans (ℚP.≃-sym (ℚP.*-identityʳ yₘ)) (ℚP.*-congˡ {yₘ} (ℚP.≃-sym (e-*-inverseˡ xₙ {xₖ≢0 n})))))
+                                                          ((ℚP.-‿cong (ℚP.≃-trans (ℚP.≃-sym (ℚP.*-identityʳ yₙ)) (ℚP.*-congˡ {yₙ} (ℚP.≃-sym (e-*-inverseˡ xₘ {xₖ≢0 m}))))))) ⟩
+       ℚ.∣ yₘ ℚ.* (yₙ ℚ.* xₙ) ℚ.- yₙ ℚ.* (yₘ ℚ.* xₘ) ∣ ≈⟨ ℚP.∣-∣-cong (solve 4 (λ xₘ xₙ yₘ yₙ ->
+                                                          (yₘ ⊗ (yₙ ⊗ xₙ) ⊖ yₙ ⊗ (yₘ ⊗ xₘ)) ⊜ (yₘ ⊗ yₙ ⊗ (xₙ ⊖ xₘ)))
+                                                          ℚP.≃-refl xₘ xₙ yₘ yₙ) ⟩
+       ℚ.∣ yₘ ℚ.* yₙ ℚ.* (xₙ ℚ.- xₘ) ∣                 ≈⟨ ℚP.∣p*q∣≃∣p∣*∣q∣ (yₘ ℚ.* yₙ) (xₙ ℚ.- xₘ) ⟩
+       ℚ.∣ yₘ ℚ.* yₙ ∣ ℚ.* ℚ.∣ xₙ ℚ.- xₘ ∣             ≤⟨ ℚP.≤-trans
+                                                          (ℚP.*-monoʳ-≤-nonNeg {ℚ.∣ yₘ ℚ.* yₙ ∣} _ (reg x ((n ℕ.+ l) ℕ.* (l ℕ.* l)) ((m ℕ.+ l) ℕ.* (l ℕ.* l))))
+                                                          (ℚP.*-monoˡ-≤-nonNeg {+ 1 / ((n ℕ.+ l) ℕ.* (l ℕ.* l)) ℚ.+ + 1 / ((m ℕ.+ l) ℕ.* (l ℕ.* l))} _ ∣yₘ*yₙ∣≤l²) ⟩
+       (+ l / 1) ℚ.* (+ l / 1) ℚ.*
+       ((+ 1 / ((n ℕ.+ l) ℕ.* (l ℕ.* l))) ℚ.+
+        (+ 1 / ((m ℕ.+ l) ℕ.* (l ℕ.* l))))             ≈⟨ ℚ.*≡* (ℤsolve 3 (λ m n l ->
+                                                          ((l :* l) :* ((κ (+ 1) :* ((m :+ l) :* (l :* l))) :+
+                                                          (κ (+ 1) :* ((n :+ l) :* (l :* l))))) :* ((m :+ l) :* (n :+ l)) :=
+                                                          (κ (+ 1) :* (n :+ l) :+ κ (+ 1) :* (m :+ l)) :* (κ (+ 1) :* κ (+ 1) :*
+                                                          (((n :+ l) :* (l :* l)) :* ((m :+ l) :* (l :* l)))))
+                                                          refl (+ m) (+ n) (+ l)) ⟩
 
-    xₖ≢0 : ∀ (k : ℕ) -> ℤ.∣ ↥ seq x ((k ℕ.+ N) ℕ.* (N ℕ.* N)) ∣ ≢0
-    xₖ≢0 k = not0-helper x x≄0 k
+       (+ 1 / (m ℕ.+ l)) ℚ.+ (+ 1 / (n ℕ.+ l))         ≤⟨ ℚP.+-mono-≤
+                                                          (q≤r⇒+p/r≤+p/q 1 m (m ℕ.+ l) (ℕP.m≤m+n m l))
+                                                          (q≤r⇒+p/r≤+p/q 1 n (n ℕ.+ l) (ℕP.m≤m+n n l)) ⟩
+       (+ 1 / m) ℚ.+ (+ 1 / n)                          ∎
+      where
+        open ℚP.≤-Reasoning
+        open ℚ-Solver
+        open ℤ-Solver using ()
+          renaming
+            ( solve to ℤsolve
+            ; _⊕_   to _:+_
+            ; _⊗_   to _:*_
+            ; _⊜_   to _:=_
+            ; Κ     to κ
+            )
+        
+        m = suc k₁
+        n = suc k₂
 
-    yₘ = (erased-1/ xₘ) {xₖ≢0 m}
-    yₙ = (erased-1/ xₙ) {xₖ≢0 n}
+        xₘ = seq x ((m ℕ.+ l) ℕ.* (l ℕ.* l))
+        xₙ = seq x ((n ℕ.+ l) ℕ.* (l ℕ.* l))
 
-    ∣yₘ*yₙ∣≤N² : ℚ.∣ yₘ ℚ.* yₙ ∣ ℚ.≤ (+ N / 1) ℚ.* (+ N / 1)
-    ∣yₘ*yₙ∣≤N² = begin
-      ℚ.∣ yₘ ℚ.* yₙ ∣          ≈⟨ ℚP.∣p*q∣≃∣p∣*∣q∣ yₘ yₙ ⟩
-      ℚ.∣ yₘ ∣ ℚ.* ℚ.∣ yₙ ∣    ≤⟨ ℚ-*-mono-≤ {ℚ.∣ yₘ ∣} {+ N / 1} {ℚ.∣ yₙ ∣} {+ N / 1} _ _
-                                 (inverse-helper x x≄0 m) (inverse-helper x x≄0 n) ⟩
-      (+ N / 1) ℚ.* (+ N / 1)   ∎
+        xₖ≢0 : ∀ (k : ℕ) -> ℤ.∣ ↥ seq x ((k ℕ.+ l) ℕ.* (l ℕ.* l)) ∣ ≢0
+        xₖ≢0 k = not0-helper x xNeq0 k
+
+        yₘ = (erased-1/ xₘ) {xₖ≢0 m}
+        yₙ = (erased-1/ xₙ) {xₖ≢0 n}
+
+        ∣yₘ*yₙ∣≤l² : ℚ.∣ yₘ ℚ.* yₙ ∣ ℚ.≤ (+ l / 1) ℚ.* (+ l / 1)
+        ∣yₘ*yₙ∣≤l² = begin
+          ℚ.∣ yₘ ℚ.* yₙ ∣          ≈⟨ ℚP.∣p*q∣≃∣p∣*∣q∣ yₘ yₙ ⟩
+          ℚ.∣ yₘ ∣ ℚ.* ℚ.∣ yₙ ∣    ≤⟨ ℚ-*-mono-≤ {ℚ.∣ yₘ ∣} {+ l / 1} {ℚ.∣ yₙ ∣} {+ l / 1} _ _
+                                     (inverse-helper x xNeq0 m) (inverse-helper x xNeq0 n) ⟩
+          (+ l / 1) ℚ.* (+ l / 1)   ∎
+{-# COMPILE AGDA2HS _\<_ #-}
+
+-- The old name as an erased alias.
+_⁻¹ : (x : ℝ) → x ≄ zeroℝ → ℝ
+_⁻¹ = _\<_
 
 @0 +p≤+q⇒1/q≤1/p : ∀ {p q} -> (posp : ℚ.Positive p) -> (posq : ℚ.Positive q) -> p ℚ.≤ q ->
                 (erased-1/ q) {ℚP.p≄0⇒∣↥p∣≢0 q (ℚ≠-helper q (inj₁ (ℚP.positive⁻¹ posq)))} ℚ.≤ (erased-1/ p) {ℚP.p≄0⇒∣↥p∣≢0 p (ℚ≠-helper p (inj₁ (ℚP.positive⁻¹ posp)))}
@@ -233,7 +254,7 @@ reg ((x ⁻¹) x≄0) (suc k₁) (suc k₂) = begin
 @0 *-inverseʳ : ∀ x -> (x≄0 : x ≄0) -> x * ((x ⁻¹) x≄0) ≃ oneℝ
 *-inverseʳ x x≄0 = *≃* λ @0 {(suc k₁) ->
                      let n = suc k₁; x⁻¹ = (x ⁻¹) x≄0; k = fK x ℕ.⊔ fK x⁻¹
-                            ; N = Nₐ x x≄0; x₂ₖₙ = seq x (2 ℕ.* k ℕ.* n)
+                            ; N = na x x≄0; x₂ₖₙ = seq x (2 ℕ.* k ℕ.* n)
                             ; xₛ = seq x ((2 ℕ.* k ℕ.* n ℕ.+ N) ℕ.* (N ℕ.* N))
                             ; y₂ₖₙ = (erased-1/ xₛ) {not0-helper x x≄0 (2 ℕ.* k ℕ.* n)} in begin
   ℚ.∣ x₂ₖₙ ℚ.* y₂ₖₙ ℚ.- 1ℚᵘ ∣                                   ≈⟨ ℚP.∣-∣-cong (ℚP.+-congʳ (x₂ₖₙ ℚ.* y₂ₖₙ) (ℚP.-‿cong
@@ -299,10 +320,10 @@ abstract
       x⁻¹ * x ≈⟨ *-inverseˡ x x≄0 ⟩
       oneℝ       ∎
 
-posx⇒posx⁻¹ : ∀ {x} -> (x≄0 : x ≄ zeroℝ) -> Positive x -> Positive ((x ⁻¹) x≄0)
-posx⇒posx⁻¹ {x} x≄0 posx = let fromPosx = fastLemma281If x posx; M = suc (proj₁ fromPosx) in
-                           lemma281OnlyIf ((x ⁻¹) x≄0) (ℕ.pred (fK x ℕ.⊔ M) :&: λ @0 {(suc k₁) m≥Kₓ⊔M ->
-                           let m = suc k₁; N = Nₐ x x≄0; xₛ = seq x ((m ℕ.+ N) ℕ.* (N ℕ.* N)); yₘ = (erased-1/ xₛ) {not0-helper x x≄0 m} in begin
+posxThenPosxInv : ∀ (x : ℝ) -> (xNeq0 : x ≄ zeroℝ) -> Positive x -> Positive (x \< xNeq0)
+posxThenPosxInv x xNeq0 posx = let fromPosx = fastLemma281If x posx; M = suc (proj₁ fromPosx) in
+                           lemma281OnlyIf (x \< xNeq0) (ℕ.pred (fK x ℕ.⊔ M) :&: λ @0 {(suc k₁) m≥Kₓ⊔M ->
+                           let m = suc k₁; N = na x xNeq0; xₛ = seq x ((m ℕ.+ N) ℕ.* (N ℕ.* N)); yₘ = (erased-1/ xₛ) {not0-helper x xNeq0 m} in begin
  + 1 / (fK x ℕ.⊔ M) ≤⟨ q≤r⇒+p/r≤+p/q 1 (fK x) (fK x ℕ.⊔ M) (ℕP.m≤m⊔n (fK x) M) ⟩
  + 1 / (fK x)       ≤⟨ +p≤+q⇒1/q≤1/p {xₛ} {+ fK x / 1}
                       (ℚ.positive (ℚP.<-≤-trans (ℚP.positive⁻¹ {+ 1 / M} _) (proj₂ fromPosx ((m ℕ.+ N) ℕ.* (N ℕ.* N))
@@ -310,19 +331,25 @@ posx⇒posx⁻¹ {x} x≄0 posx = let fromPosx = fastLemma281If x posx; M = suc 
                       (ℚP.≤-trans (p≤∣p∣ xₛ) (ℚP.<⇒≤ (canonical-strict-upper-bound x ((m ℕ.+ N) ℕ.* (N ℕ.* N))))) ⟩
  yₘ                  ∎})
   where open ℚP.≤-Reasoning
-{-
+{-# COMPILE AGDA2HS posxThenPosxInv #-}
+{- this gets stuck for some reason
 @0 neg-distrib-⁻¹ : ∀ {x : ℝ} -> (x≄0 : x ≄0) -> negate ((x ⁻¹) x≄0) ≃ ((negate x) ⁻¹) (x≄0⇒-x≄0 x x≄0)
-neg-distrib-⁻¹ {x} x≄0 = let x⁻¹ = (x ⁻¹) x≄0 in ⁻¹-unique (negate x⁻¹) (negate x) (x≄0⇒-x≄0 x x≄0) {!begin-equality
-  (- x⁻¹) * (- x) ≈⟨ ≃-sym (neg-distribˡ-* x⁻¹ (- x)) ⟩
-  - (x⁻¹ * (- x)) ≈⟨ -‿cong (≃-sym (neg-distribʳ-* x⁻¹ x)) ⟩
-  - - (x⁻¹ * x)   ≈⟨ neg-involutive (x⁻¹ * x) ⟩
-  x⁻¹ * x         ≈⟨ *-inverseˡ x x≄0 ⟩
-  oneℝ               ∎!}
-  where open ≤-Reasoning
+neg-distrib-⁻¹ {x} x≄0 = let x⁻¹ = (x ⁻¹) x≄0 in ⁻¹-unique (negate x⁻¹) (negate x) (x≄0⇒-x≄0 x x≄0)
+                                                        {-(≃-trans (≃-sym (neg-distribˡ-* x⁻¹ (- x)))
+                                                        (≃-trans (-‿cong {x⁻¹ * (- x)} (≃-sym (neg-distribʳ-* x⁻¹ x)))
+                                                        (≃-trans (neg-involutive (x⁻¹ * x))
+                                                                 (*-inverseˡ x x≄0))))-}
+  (begin
+  negate x⁻¹ * negate x            ≈⟨ ≃-sym (neg-distribˡ-* x⁻¹ (negate x)) ⟩
+  negate (x⁻¹ * (negate x))        ≈⟨ -‿cong {x⁻¹ * (negate x)} (≃-sym (neg-distribʳ-* x⁻¹ x)) ⟩
+  negate (negate (x⁻¹ * x))        ≈⟨ neg-involutive (x⁻¹ * x) ⟩
+  x⁻¹ * x                          ≈⟨ *-inverseˡ x x≄0 ⟩
+  oneℝ                            ∎)
+  where open ≃-Reasoning
 
 @0 negx⇒negx⁻¹ : ∀ {x} -> (x≄0 : x ≄0) -> Negative x -> Negative ((x ⁻¹) x≄0)
 negx⇒negx⁻¹ {x} x≄0 negx = let x⁻¹ = (x ⁻¹) x≄0; -x⁻¹ = ((negate x) ⁻¹) (x≄0⇒-x≄0 x x≄0) in
-                           posCong (-x⁻¹) (negate x⁻¹) (≃-sym (neg-distrib-⁻¹ {x} x≄0)) (posx⇒posx⁻¹ { negate x} (x≄0⇒-x≄0 x x≄0) negx)
+                           posCong (-x⁻¹) (negate x⁻¹) (≃-sym (neg-distrib-⁻¹ {x} x≄0)) (posxThenPosxInv negate x (x≄0⇒-x≄0 x x≄0) negx)
 
 @0 x<0⇒x⁻¹<0 : ∀ {x} -> (x≄0 : x ≄0) -> x < zeroℝ -> (x ⁻¹) x≄0 < zeroℝ
 x<0⇒x⁻¹<0 {x} x≄0 x<0 = let x⁻¹ = (x ⁻¹) x≄0 in
@@ -334,12 +361,12 @@ x<y∧posx,y⇒y⁻¹<x⁻¹ : ∀ {x y} -> x < y -> (x≄0 : x ≄0) -> (y≄0 
 x<y∧posx,y⇒y⁻¹<x⁻¹ {x} {y} x<y x≄0 y≄0 posx posy = ltRespLEq {x⁻¹} {x * x⁻¹ * y⁻¹} {y⁻¹} (≃-trans {x * x⁻¹ * y⁻¹} {oneℝ * y⁻¹} {y⁻¹} (*-congʳ (*-inverseʳ x x≄0)) (*-identityˡ y⁻¹))
                                                      (ltRespREq {x * x⁻¹ * y⁻¹} {y * x⁻¹ * y⁻¹} {x⁻¹}
                                                                      (≃-trans {y * x⁻¹ * y⁻¹} {x⁻¹ * (y * y⁻¹)} {x⁻¹} (≃-trans (*-congʳ (*-comm y x⁻¹)) (*-assoc x⁻¹ y y⁻¹)) (≃-trans (*-congˡ (*-inverseʳ y y≄0)) (*-identityʳ x⁻¹)))
-                                                                     (multiMonoLLtPos {y⁻¹} (posx⇒posx⁻¹ {y} y≄0 posy) {x * x⁻¹} {y * x⁻¹}
-                                                                       (multiMonoLLtPos {x⁻¹} (posx⇒posx⁻¹ {x} x≄0 posx) x<y)))
+                                                                     (multiMonoLLtPos {y⁻¹} (posxThenPosxInv y y≄0 posy) {x * x⁻¹} {y * x⁻¹}
+                                                                       (multiMonoLLtPos {x⁻¹} (posxThenPosxInv x x≄0 posx) x<y)))
   {-begin-strict
   y⁻¹             ≈⟨ ≃-sym (≃-trans {x * x⁻¹ * y⁻¹} {oneℝ * y⁻¹} {y⁻¹} (*-congʳ (*-inverseʳ x x≄0)) (*-identityˡ y⁻¹)) ⟩
-  x * x⁻¹ * y⁻¹   <⟨ *-monoˡ-<-pos {y⁻¹} (posx⇒posx⁻¹ {y} y≄0 posy) {x * x⁻¹} {y * x⁻¹}
-                     (*-monoˡ-<-pos {x⁻¹} (posx⇒posx⁻¹ {x} x≄0 posx) x<y) ⟩
+  x * x⁻¹ * y⁻¹   <⟨ *-monoˡ-<-pos {y⁻¹} (posxThenPosxInv y y≄0 posy) {x * x⁻¹} {y * x⁻¹}
+                     (*-monoˡ-<-pos {x⁻¹} (posxThenPosxInv x x≄0 posx) x<y) ⟩
   y * x⁻¹ * y⁻¹   ≈⟨ ≃-trans (*-congʳ (*-comm y x⁻¹)) (*-assoc x⁻¹ y y⁻¹) ⟩
   x⁻¹ * (y * y⁻¹) ≈⟨ ≃-trans (*-congˡ (*-inverseʳ y y≄0)) (*-identityʳ x⁻¹) ⟩
   x⁻¹              ∎-}
@@ -353,7 +380,7 @@ x<y∧posx,y⇒y⁻¹<x⁻¹ {x} {y} x<y x≄0 y≄0 posx posy = ltRespLEq {x⁻
 ⁻¹-involutive {x} x≄0 x⁻¹≄0 = let x⁻¹ = (x ⁻¹) x≄0 in ≃-sym (⁻¹-unique x x⁻¹ x⁻¹≄0 (*-inverseʳ x x≄0))
 
 @0 0<x⇒0<x⁻¹ : ∀ {x} -> (x≄0 : x ≄0) -> zeroℝ < x -> zeroℝ < (x ⁻¹) x≄0
-0<x⇒0<x⁻¹ {x} x≄0 0<x = posxThenZeroLtx ((x ⁻¹) x≄0) (posx⇒posx⁻¹ {x} x≄0 (zeroLtxThenPosx 0<x))
+0<x⇒0<x⁻¹ {x} x≄0 0<x = posxThenZeroLtx ((x ⁻¹) x≄0) (posxThenPosxInv x x≄0 (zeroLtxThenPosx 0<x))
 
 @0 ⁻¹-involutive-default : ∀ {x} -> (x≄0 : x ≄0) ->
                 (((x ⁻¹) x≄0) ⁻¹) ([ (λ x<0 -> inj₁ (x<0⇒x⁻¹<0 {x} x≄0 x<0)) , (λ 0<x -> inj₂ (0<x⇒0<x⁻¹ {x} x≄0 0<x))]′ x≄0) ≃ x

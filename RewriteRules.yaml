@@ -106,6 +106,9 @@ rules:
   - from: Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1
     to: denominatorMinus1                                # this is not too pretty now, but that's a temporary solution until denominatorℕ gets fixed
     importing: Base
+  - from: Inverse.erased-1/_                             # this is ours, but still, logically it belongs here
+    to: recip
+    importing: Prelude
 
   # For '-ed functions in our own modules.
   - from: ExtraProperties.fastArchimedeanℚ
