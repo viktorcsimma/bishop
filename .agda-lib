@@ -1,5 +1,5 @@
-name: thesis
+name: bishop
 depend:
   standard-library
-	agda2hs
+  agda2hs
 include: .
