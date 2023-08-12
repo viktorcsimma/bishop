@@ -38,6 +38,7 @@ open import Data.List
 
 open import Agda.Builtin.Unit
 open import Haskell.Prim.Num
+import Haskell.Prim.Either as Either
 
 open import ErasureProduct
 open import ExtraProperties
@@ -236,7 +237,7 @@ _\<_ : (x : ℝ) -> x ≄ zeroℝ -> ℝ
 {-# COMPILE AGDA2HS _\<_ #-}
 
 -- The old name as an erased alias.
-_⁻¹ : (x : ℝ) → x ≄ zeroℝ → ℝ
+@0 _⁻¹ : (x : ℝ) → x ≄ zeroℝ → ℝ
 _⁻¹ = _\<_
 
 @0 +p≤+q⇒1/q≤1/p : ∀ {p q} -> (posp : ℚ.Positive p) -> (posq : ℚ.Positive q) -> p ℚ.≤ q ->
@@ -251,7 +252,7 @@ _⁻¹ = _\<_
 
 -- Properties of _⁻¹
 
-@0 *-inverseʳ : ∀ x -> (x≄0 : x ≄0) -> x * ((x ⁻¹) x≄0) ≃ oneℝ
+@0 *-inverseʳ : ∀ x -> (x≄0 : x ≄0) -> x * (x \< x≄0) ≃ oneℝ
 *-inverseʳ x x≄0 = *≃* λ @0 {(suc k₁) ->
                      let n = suc k₁; x⁻¹ = (x ⁻¹) x≄0; k = fK x ℕ.⊔ fK x⁻¹
                             ; N = na x x≄0; x₂ₖₙ = seq x (2 ℕ.* k ℕ.* n)
@@ -290,7 +291,7 @@ _⁻¹ = _\<_
         ; Κ     to κ
         )
 
-@0 *-inverseˡ : ∀ x -> (x≄0 : x ≄0) -> ((x ⁻¹) x≄0) * x ≃ oneℝ
+@0 *-inverseˡ : ∀ x -> (x≄0 : x ≄0) -> (x \< x≄0) * x ≃ oneℝ
 *-inverseˡ x x≄0 = let x⁻¹ = (x ⁻¹) x≄0 in begin
   x⁻¹ * x ≈⟨ *-comm x⁻¹ x ⟩
   x * x⁻¹ ≈⟨ *-inverseʳ x x≄0 ⟩
@@ -298,7 +299,7 @@ _⁻¹ = _\<_
   where open ≃-Reasoning
 
 abstract
-  @0 ⁻¹-unique : ∀ t x -> (x≄0 : x ≄0) -> t * x ≃ oneℝ -> t ≃ (x ⁻¹) x≄0
+  @0 ⁻¹-unique : ∀ (t x : ℝ) -> (x≄0 : x ≄0) -> t * x ≃ oneℝ -> t ≃ x \< x≄0
   ⁻¹-unique t x x≄0 tx=1 = let x⁻¹ = (x ⁻¹) x≄0 in begin 
     t             ≈⟨ ≃-sym (*-identityʳ t) ⟩
     t * oneℝ        ≈⟨ *-congˡ (≃-sym (*-inverseʳ x x≄0)) ⟩
@@ -308,7 +309,7 @@ abstract
     x⁻¹            ∎
     where open ≃-Reasoning
 
-@0 ⁻¹-cong : ∀ {x y} -> (x≄0 : x ≄0) -> (y≄0 : y ≄0) -> x ≃ y -> (x ⁻¹) x≄0 ≃ (y ⁻¹) y≄0
+@0 ⁻¹-cong : ∀ {x y} -> (x≄0 : x ≄0) -> (y≄0 : y ≄0) -> x ≃ y -> x \< x≄0 ≃ y \< y≄0
 ⁻¹-cong {x} {y} x≄0 y≄0 x≃y = ⁻¹-unique x⁻¹ y y≄0 lem 
   where
     open ≃-Reasoning
@@ -332,37 +333,56 @@ posxThenPosxInv x xNeq0 posx = let fromPosx = fastLemma281If x posx; M = suc (pr
  yₘ                  ∎})
   where open ℚP.≤-Reasoning
 {-# COMPILE AGDA2HS posxThenPosxInv #-}
-{- this gets stuck for some reason
-@0 neg-distrib-⁻¹ : ∀ {x : ℝ} -> (x≄0 : x ≄0) -> negate ((x ⁻¹) x≄0) ≃ ((negate x) ⁻¹) (x≄0⇒-x≄0 x x≄0)
-neg-distrib-⁻¹ {x} x≄0 = let x⁻¹ = (x ⁻¹) x≄0 in ⁻¹-unique (negate x⁻¹) (negate x) (x≄0⇒-x≄0 x x≄0)
-                                                        {-(≃-trans (≃-sym (neg-distribˡ-* x⁻¹ (- x)))
-                                                        (≃-trans (-‿cong {x⁻¹ * (- x)} (≃-sym (neg-distribʳ-* x⁻¹ x)))
-                                                        (≃-trans (neg-involutive (x⁻¹ * x))
-                                                                 (*-inverseˡ x x≄0))))-}
-  (begin
-  negate x⁻¹ * negate x            ≈⟨ ≃-sym (neg-distribˡ-* x⁻¹ (negate x)) ⟩
-  negate (x⁻¹ * (negate x))        ≈⟨ -‿cong {x⁻¹ * (negate x)} (≃-sym (neg-distribʳ-* x⁻¹ x)) ⟩
-  negate (negate (x⁻¹ * x))        ≈⟨ neg-involutive (x⁻¹ * x) ⟩
-  x⁻¹ * x                          ≈⟨ *-inverseˡ x x≄0 ⟩
-  oneℝ                            ∎)
-  where open ≃-Reasoning
 
-@0 negx⇒negx⁻¹ : ∀ {x} -> (x≄0 : x ≄0) -> Negative x -> Negative ((x ⁻¹) x≄0)
-negx⇒negx⁻¹ {x} x≄0 negx = let x⁻¹ = (x ⁻¹) x≄0; -x⁻¹ = ((negate x) ⁻¹) (x≄0⇒-x≄0 x x≄0) in
-                           posCong (-x⁻¹) (negate x⁻¹) (≃-sym (neg-distrib-⁻¹ {x} x≄0)) (posxThenPosxInv negate x (x≄0⇒-x≄0 x x≄0) negx)
+-- For some reason, it stucks when we work with (negate x)⁻¹. So for now, we postulate them.
+postulate @0 neg-distrib-⁻¹ : ∀ {x : ℝ} -> (x≄0 : x ≄0) -> negate (x \< x≄0) ≃ (negate x) \< x≄0⇒-x≄0 x x≄0
+{-
+neg-distrib-⁻¹ {x} x≄0 = {!theProof!}
+  where
+    x⁻¹ -x⁻¹ : ℝ
+    x⁻¹ = x \< x≄0
+    -x⁻¹ = negate x⁻¹
+    -x≄0 : negate x ≄0
+    -x≄0 = x≄0⇒-x≄0 x x≄0
+    ≃-helper : -x⁻¹ * negate x ≃ oneℝ
+    ≃-helper = begin
+      -x⁻¹ * negate x            ≈⟨ ≃-sym {negate (x⁻¹ * (negate x))} {negate x⁻¹ * negate x} (neg-distribˡ-* x⁻¹ (negate x)) ⟩
+      negate (x⁻¹ * (negate x))        ≈⟨ -‿cong {x⁻¹ * (negate x)} {negate (x⁻¹ * x)} (≃-sym (neg-distribʳ-* x⁻¹ x)) ⟩
+      negate (negate (x⁻¹ * x))        ≈⟨ neg-involutive (x⁻¹ * x) ⟩
+      x⁻¹ * x                          ≈⟨ *-inverseˡ x x≄0 ⟩
+      oneℝ                            ∎
+      where open ≃-Reasoning
+    [-x]⁻¹ : ℝ
+    [-x]⁻¹ = (negate x) \< -x≄0
+    theProof : -x⁻¹ ≃ [-x]⁻¹
+    theProof = {!⁻¹-unique {!-x⁻¹!} {!negate x!} {!-x≄0!} {!≃-helper!}!}
+-}
 
-@0 x<0⇒x⁻¹<0 : ∀ {x} -> (x≄0 : x ≄0) -> x < zeroℝ -> (x ⁻¹) x≄0 < zeroℝ
+private
+  -- abstract
+  postulate @0 pos-[-x]⁻¹-helper : ∀ {x : ℝ} (x≄0 : x ≄0) -> Negative x -> Positive (((negate x) ⁻¹) (x≄0⇒-x≄0 x x≄0))
+    -- pos-[-x]⁻¹-helper {x} x≄0 negx = {!posxThenPosxInv (negate x) {!x≄0⇒-x≄0 x x≄0!} {!negx!}!}
+
+@0 negx⇒negx⁻¹ : ∀ {x : ℝ} -> (x≄0 : x ≄0) -> Negative x -> Negative ((x ⁻¹) x≄0)
+negx⇒negx⁻¹ {x} x≄0 negx = posCong [-x]⁻¹ (negate x⁻¹) (≃-sym (neg-distrib-⁻¹ {x} x≄0)) (pos-[-x]⁻¹-helper {x} x≄0 negx)
+  where
+  x⁻¹ [-x]⁻¹ : ℝ
+  x⁻¹ = (x ⁻¹) x≄0
+  [-x]⁻¹ = ((negate x) ⁻¹) (x≄0⇒-x≄0 x x≄0)
+
+
+@0 x<0⇒x⁻¹<0 : ∀ {x : ℝ} -> (x≄0 : x ≄0) -> x < zeroℝ -> (x ⁻¹) x≄0 < zeroℝ
 x<0⇒x⁻¹<0 {x} x≄0 x<0 = let x⁻¹ = (x ⁻¹) x≄0 in
                         negxThenxLtZero x⁻¹ (negx⇒negx⁻¹ {x} x≄0 (xLtZeroThenNegx x x<0))
 
--- have to used erased resp here
-x<y∧posx,y⇒y⁻¹<x⁻¹ : ∀ {x y} -> x < y -> (x≄0 : x ≄0) -> (y≄0 : y ≄0) -> Positive x -> Positive y ->
-                     (y ⁻¹) y≄0 < (x ⁻¹) x≄0
-x<y∧posx,y⇒y⁻¹<x⁻¹ {x} {y} x<y x≄0 y≄0 posx posy = ltRespLEq {x⁻¹} {x * x⁻¹ * y⁻¹} {y⁻¹} (≃-trans {x * x⁻¹ * y⁻¹} {oneℝ * y⁻¹} {y⁻¹} (*-congʳ (*-inverseʳ x x≄0)) (*-identityˡ y⁻¹))
-                                                     (ltRespREq {x * x⁻¹ * y⁻¹} {y * x⁻¹ * y⁻¹} {x⁻¹}
-                                                                     (≃-trans {y * x⁻¹ * y⁻¹} {x⁻¹ * (y * y⁻¹)} {x⁻¹} (≃-trans (*-congʳ (*-comm y x⁻¹)) (*-assoc x⁻¹ y y⁻¹)) (≃-trans (*-congˡ (*-inverseʳ y y≄0)) (*-identityʳ x⁻¹)))
-                                                                     (multiMonoLLtPos {y⁻¹} (posxThenPosxInv y y≄0 posy) {x * x⁻¹} {y * x⁻¹}
-                                                                       (multiMonoLLtPos {x⁻¹} (posxThenPosxInv x x≄0 posx) x<y)))
+-- had to use erased resp here
+invMonoLt : ∀ (x y : ℝ) -> x < y -> (x≄0 : x ≄ zeroℝ) -> (y≄0 : y ≄ zeroℝ) -> Positive x -> Positive y ->
+                     y \< y≄0 < x \< x≄0
+invMonoLt x y xLty xNeqZero yNeqZero posx posy = ltRespLEq xInv (x * xInv * yInv) yInv (≃-trans {x * xInv * yInv} {oneℝ * yInv} {yInv} (*-congʳ (*-inverseʳ x xNeqZero)) (*-identityˡ yInv))
+                                                     (ltRespREq (x * xInv * yInv) (y * xInv * yInv) (xInv)
+                                                                     (≃-trans {y * xInv * yInv} {xInv * (y * yInv)} {xInv} (≃-trans (*-congʳ (*-comm y xInv)) (*-assoc xInv y yInv)) (≃-trans (*-congˡ (*-inverseʳ y yNeqZero)) (*-identityʳ xInv)))
+                                                                     (multiMonoLLtPos yInv (posxThenPosxInv y yNeqZero posy) (x * xInv) (y * xInv)
+                                                                       (multiMonoLLtPos xInv (posxThenPosxInv x xNeqZero posx) x y xLty)))
   {-begin-strict
   y⁻¹             ≈⟨ ≃-sym (≃-trans {x * x⁻¹ * y⁻¹} {oneℝ * y⁻¹} {y⁻¹} (*-congʳ (*-inverseʳ x x≄0)) (*-identityˡ y⁻¹)) ⟩
   x * x⁻¹ * y⁻¹   <⟨ *-monoˡ-<-pos {y⁻¹} (posxThenPosxInv y y≄0 posy) {x * x⁻¹} {y * x⁻¹}
@@ -372,17 +392,27 @@ x<y∧posx,y⇒y⁻¹<x⁻¹ {x} {y} x<y x≄0 y≄0 posx posy = ltRespLEq {x⁻
   x⁻¹              ∎-}
   where
     -- open ≤-Reasoning
-    x⁻¹ y⁻¹ : ℝ
-    x⁻¹ = (x ⁻¹) x≄0 ; y⁻¹ = (y ⁻¹) y≄0
+    xInv yInv : ℝ
+    xInv = x \< xNeqZero ; yInv = y \< yNeqZero
+{-# COMPILE AGDA2HS invMonoLt #-}
+
+-- Alias.
+@0 x<y∧posx,y⇒y⁻¹<x⁻¹ : ∀ {x y : ℝ} -> x < y -> (x≄0 : x ≄0) -> (y≄0 : y ≄0) -> Positive x -> Positive y ->
+                     (y ⁻¹) y≄0 < (x ⁻¹) x≄0
+x<y∧posx,y⇒y⁻¹<x⁻¹ {x} {y} = invMonoLt x y
 
 @0 ⁻¹-involutive : ∀ {x} -> (x≄0 : x ≄0) -> (x⁻¹≄0 : (x ⁻¹) x≄0 ≄0) ->
                 (((x ⁻¹) x≄0) ⁻¹) x⁻¹≄0 ≃ x
 ⁻¹-involutive {x} x≄0 x⁻¹≄0 = let x⁻¹ = (x ⁻¹) x≄0 in ≃-sym (⁻¹-unique x x⁻¹ x⁻¹≄0 (*-inverseʳ x x≄0))
 
 @0 0<x⇒0<x⁻¹ : ∀ {x} -> (x≄0 : x ≄0) -> zeroℝ < x -> zeroℝ < (x ⁻¹) x≄0
-0<x⇒0<x⁻¹ {x} x≄0 0<x = posxThenZeroLtx ((x ⁻¹) x≄0) (posxThenPosxInv x x≄0 (zeroLtxThenPosx 0<x))
+0<x⇒0<x⁻¹ {x} x≄0 0<x = posxThenZeroLtx ((x ⁻¹) x≄0) (posxThenPosxInv x x≄0 (zeroLtxThenPosx x 0<x))
 
+-- A default proof for the ≄0-ity of the inverse.
+@0 x⁻¹≄0 : ∀ (x : ℝ) (x≄0 : x ≄0) -> (x \< x≄0) ≄0
+x⁻¹≄0 x x≄0 = Either.either (λ x<0 -> Either.Left (x<0⇒x⁻¹<0 {x} x≄0 x<0)) (λ 0<x -> Either.Right (0<x⇒0<x⁻¹ {x} x≄0 0<x)) x≄0
+
+-- A version of ⁻¹-involutive which uses the default proof.
 @0 ⁻¹-involutive-default : ∀ {x} -> (x≄0 : x ≄0) ->
-                (((x ⁻¹) x≄0) ⁻¹) ([ (λ x<0 -> inj₁ (x<0⇒x⁻¹<0 {x} x≄0 x<0)) , (λ 0<x -> inj₂ (0<x⇒0<x⁻¹ {x} x≄0 0<x))]′ x≄0) ≃ x
-⁻¹-involutive-default {x} x≄0 = ⁻¹-involutive {x} x≄0 ([ (λ x<0 -> inj₁ (x<0⇒x⁻¹<0 {x} x≄0 x<0)) , (λ 0<x -> inj₂ (0<x⇒0<x⁻¹ {x} x≄0 0<x))]′ x≄0)
--}
+                (((x ⁻¹) x≄0) ⁻¹) (x⁻¹≄0 x x≄0) ≃ x
+⁻¹-involutive-default {x} x≄0 = ⁻¹-involutive {x} x≄0 (x⁻¹≄0 x x≄0)

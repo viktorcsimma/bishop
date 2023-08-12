@@ -1584,6 +1584,12 @@ posCong x y x≃y posx = lemma281OnlyIf y (ℕ.pred (2 ℕ.* l) :&: lem)
           seq y m                                ∎
 {-# COMPILE AGDA2HS posCong #-}
 
+-- We create erased aliases with the old names and keep the erased parameters there.
+-- Actually, a significant amount of time was spent on rewriting these and providing the parameters, even in erased definitions.
+-- Maybe this will make the process quicker.
+@0 pos-cong : ∀ {x y : ℝ} -> @0 (x ≃ y) -> Positive x -> Positive y
+pos-cong {x} {y} = posCong x y
+
 pos⇒nonNeg : ∀ {x} -> Positive x -> NonNegative x
 pos⇒nonNeg {x} posx = lemma-2-8-2-onlyif (λ @0 { (suc k₁) -> let n = suc k₁ in N :&: _ , λ @0 { (suc k₂) m≥N -> let m = suc k₂ in
                       begin
@@ -1684,6 +1690,9 @@ posxAndNonNegyThenPosxPlusy x y posx nony = let fromPosx = fastLemma281If x posx
     open ℤ-Solver
 {-# COMPILE AGDA2HS posxAndNonNegyThenPosxPlusy #-}
 
+@0 posx∧nonNegy⇒posx+y : ∀ {x y : ℝ} -> Positive x -> @0 NonNegative y -> Positive (x + y)
+posx∧nonNegy⇒posx+y {x} {y} = posxAndNonNegyThenPosxPlusy x y
+
 @0 nonNeg∣x∣ : ∀ x -> NonNegative ∣ x ∣
 nonNeg∣x∣ x = nonNeg* (λ @0 { (suc k₁) -> let n = suc k₁ in ℚP.≤-trans (ℚP.nonPositive⁻¹ _) (ℚP.0≤∣p∣ (seq x n))})
 
@@ -1751,6 +1760,9 @@ posxAndyThenPosxTimesy x y posx posy = let k = fK x ℕ.⊔ fK y; fromPosx = fas
   seq x (2 ℕ.* k ℕ.* m) ℚ.* seq y (2 ℕ.* k ℕ.* m)  ∎})
   where open ℚP.≤-Reasoning
 {-# COMPILE AGDA2HS posxAndyThenPosxTimesy #-}
+
+posx,y⇒posx*y : ∀ {x y : ℝ} -> Positive x -> Positive y -> Positive (x * y)
+posx,y⇒posx*y {x} {y} = posxAndyThenPosxTimesy x y
 
 @0 posx⇒posx⊔y : ∀ {x y} -> Positive x -> Positive (x ⊔ y)
 posx⇒posx⊔y {x} {y} posx = let fromPosx = fastLemma281If x posx; N = suc (proj₁ fromPosx) in
@@ -1930,25 +1942,26 @@ ltLe0Trans : (x y z : ℝ) → x < y → @0 y ≤ z → x < z
 ltLe0Trans x y z xLty y≤z = posCong ((y - x) + (z - y)) (z - x) (≃-trans (+-comm (y - x) (z - y)) z-y+y-x≃z-x) (posxAndNonNegyThenPosxPlusy (y - x) (z - y) xLty y≤z)
 {-# COMPILE AGDA2HS ltLe0Trans #-}
 
+@0 <-≤-trans : {x y z : ℝ} → x < y → @0 y ≤ z → x < z
+<-≤-trans {x} {y} {z} = ltLe0Trans x y z
+
 -- Similarly.
 le0LtTrans : (x y z : ℝ) → @0 x ≤ y → y < z → x < z
 le0LtTrans x y z x≤y yLtz = posCong ((z - y) + (y - x)) (z - x)
                                    z-y+y-x≃z-x (posxAndNonNegyThenPosxPlusy (z - y) (y - x) yLtz x≤y)
 {-# COMPILE AGDA2HS le0LtTrans #-}
 
-{-
-<-≤-trans : Trans _<_ _≤_ _<_
-<-≤-trans x<y y≤z = <-≤0-trans x<y y≤z
-
-≤-<-trans : Trans _≤_ _<_ _<_
-≤-<-trans x≤y y<z = ≤0-<-trans x≤y y<z
--}
+@0 ≤-<-trans : {x y z : ℝ} → @0 x ≤ y → y < z → x < z
+≤-<-trans {x} {y} {z} = le0LtTrans x y z
 
 -- Has to be compilable.
 ltTrans : (x y z : ℝ) → @0 (x < y) → y < z → x < z
 ltTrans x y z xLty yLtz = posCong ((z - y) + (y - x)) (z - x)
                            z-y+y-x≃z-x (posxAndNonNegyThenPosxPlusy (z - y) (y - x) yLtz (<⇒≤ xLty))
 {-# COMPILE AGDA2HS ltTrans #-}
+
+@0 <-trans : {x y z : ℝ} → @0 (x < y) → y < z → x < z
+<-trans {x} {y} {z} = ltTrans x y z
 
 ≤-trans : Transitive _≤_
 ≤-trans {x} {y} {z} x≤y y≤z = nonNeg-cong z-y+y-x≃z-x (nonNegx,y⇒nonNegx+y y≤z x≤y)
@@ -2056,6 +2069,9 @@ multiMonoRLtPos y posy x z xLtz = posCong (y * (z - x)) (y * z - y * x)
   where open ℝ-Solver
 {-# COMPILE AGDA2HS multiMonoRLtPos #-}
 
+@0 *-monoʳ-<-pos : ∀ {y : ℝ} -> Positive y -> {x z : ℝ} → x < z → y * x < y * z
+*-monoʳ-<-pos {y} posy {x} {z} = multiMonoRLtPos y posy x z
+
 multiMonoLLtPos : ∀ (y : ℝ) → Positive y → (x z : ℝ) → x < z → x * y < z * y  -- ∀ {y} -> Positive y -> (_* y) Preserves _<_ ⟶ _<_
 multiMonoLLtPos y posy x z xLtz = ltRespLEq (z * y) (y * x) (x * y) (*-comm y x)
                                     (ltRespREq (y * x) (y * z) (z * y) (*-comm y z)
@@ -2069,12 +2085,18 @@ multiMonoLLtPos y posy x z xLtz = ltRespLEq (z * y) (y * x) (x * y) (*-comm y x)
     open ≤-Reasoning-}
 {-# COMPILE AGDA2HS multiMonoLLtPos #-}
 
+@0 *-monoˡ-<-pos : ∀ {y} -> Positive y -> {x z : ℝ} → x < z → x * y < z * y
+*-monoˡ-<-pos {y} posy {x} {z} = multiMonoLLtPos y posy x z
+
 negMonoLt : (x y : ℝ) → x < y → negate x > negate y
 negMonoLt x y xLty = posCong (y - x) (negate x - negate y)
                          (solve 2 (λ x y -> (y ⊖ x) ⊜ (⊝ x ⊖ (⊝ y))) ≃-refl x y)
                          xLty
   where open ℝ-Solver
 {-# COMPILE AGDA2HS negMonoLt #-}
+
+@0 neg-mono-< : {x y : ℝ} → x < y → negate x > negate y
+neg-mono-< {x} {y} = negMonoLt x y
 
 @0 neg-mono-≤ : -_ Preserves _≤_ ⟶ _≥_
 neg-mono-≤ {x} {y} x≤y = nonNeg-cong
@@ -2166,9 +2188,15 @@ zeroLtxThenPosx : ∀ (x : ℝ) -> zeroℝ < x -> Positive x
 zeroLtxThenPosx x zeroLtx = posCong (x - zeroℝ) x x-0≃x zeroLtx
 {-# COMPILE AGDA2HS zeroLtxThenPosx #-}
 
+@0 0<x⇒posx : ∀ {x : ℝ} -> zeroℝ < x -> Positive x
+0<x⇒posx {x} = zeroLtxThenPosx x
+
 posxThenZeroLtx : ∀ (x : ℝ) -> Positive x -> zeroℝ < x
 posxThenZeroLtx x posx = posCong x (x - zeroℝ) (≃-sym x-0≃x) posx
 {-# COMPILE AGDA2HS posxThenZeroLtx #-}
+
+@0 posx⇒0<x : ∀ {x : ℝ} -> Positive x -> zeroℝ < x
+posx⇒0<x {x} = posxThenZeroLtx x
 
 @0 0≤x⇒nonNegx : ∀ {x} -> zeroℝ ≤ x -> NonNegative x
 0≤x⇒nonNegx {x} 0≤x = nonNeg-cong x-0≃x 0≤x
@@ -2180,17 +2208,29 @@ xLtZeroThenNegx : ∀ (x : ℝ) -> x < zeroℝ -> Negative x
 xLtZeroThenNegx x xLt0 = posCong (zeroℝ + negate x) (negate x) (+-identityˡ (- x)) xLt0
 {-# COMPILE AGDA2HS xLtZeroThenNegx #-}
 
+@0 x<0⇒negx : ∀ {x : ℝ} -> x < zeroℝ -> Negative x
+x<0⇒negx {x} = xLtZeroThenNegx x
+
 negxThenxLtZero : ∀ (x : ℝ) -> Negative x -> x < zeroℝ
 negxThenxLtZero x negx = posCong (negate x) (zeroℝ + negate x) (≃-sym (+-identityˡ (- x))) negx
 {-# COMPILE AGDA2HS negxThenxLtZero #-}
 
-zeroLtxMinusxThenxLty : ∀ x y -> zeroℝ < y - x -> x < y
-zeroLtxMinusxThenxLty x y zeroLtyMx = posCong (y - x - zeroℝ) (y - x) (≃-trans (+-congʳ (y - x) (≃-sym 0≃-0)) (+-identityʳ (y - x))) zeroLtyMx
-{-# COMPILE AGDA2HS zeroLtxMinusxThenxLty #-}
+@0 negx⇒x<0 : ∀ {x : ℝ} -> Negative x -> x < zeroℝ
+negx⇒x<0 {x} = negxThenxLtZero x
+
+zeroLtyMinusxThenxLty : ∀ x y -> zeroℝ < y - x -> x < y
+zeroLtyMinusxThenxLty x y zeroLtyMx = posCong (y - x - zeroℝ) (y - x) (≃-trans (+-congʳ (y - x) (≃-sym 0≃-0)) (+-identityʳ (y - x))) zeroLtyMx
+{-# COMPILE AGDA2HS zeroLtyMinusxThenxLty #-}
+
+@0 0<y-x⇒x<y : ∀ {x y : ℝ} -> zeroℝ < y - x -> x < y
+0<y-x⇒x<y {x} {y} = zeroLtyMinusxThenxLty x y
 
 xLtyThenZeroLtyMinusx : ∀ x y -> x < y -> zeroℝ < y - x
 xLtyThenZeroLtyMinusx x y xLty = posCong (y - x) (y - x - zeroℝ) (≃-trans (≃-sym (+-identityʳ (y - x))) (+-congʳ (y - x) 0≃-0)) xLty
 {-# COMPILE AGDA2HS xLtyThenZeroLtyMinusx #-}
+
+@0 x<y⇒0<y-x : ∀ {x y : ℝ} -> x < y -> zeroℝ < y - x
+x<y⇒0<y-x {x} {y} = xLtyThenZeroLtyMinusx x y
 
 @0 ⋆-distrib-to-p⋆-q⋆ : ∀ p q -> (p ℚ.- q) ⋆ ≃ p ⋆ - (q ⋆)
 ⋆-distrib-to-p⋆-q⋆ p q = solve 0 (Κ (p ℚ.- q) ⊜ (Κ p ⊖ Κ q)) ≃-refl
@@ -2208,6 +2248,9 @@ zeroLtpThenZeroLtToRealp (mkℚᵘ +[1+ p ] q-1) _ = let q = suc q-1 in MkPos (q
   + suc q              ≤⟨ ℤ.+≤+ (ℕP.m≤n*m (suc q) {suc p} ℕP.0<1+n) ⟩
   +[1+ p ] ℤ.* + suc q  ∎))
   where open ℤP.≤-Reasoning
+
+@0 0<p⇒0<p⋆ : ∀ p -> @0 ℚ.Positive p -> Positive (toReal p)
+0<p⇒0<p⋆ = zeroLtpThenZeroLtToRealp
 
 -- therefore:
 zeroLtpThenZeroLtToRealp' : ∀ p -> @0 ℚ.Positive p -> Positive (toReal p)
@@ -2310,6 +2353,9 @@ xNonZeroThenPosAbsx : ∀ (x : ℝ) -> x ≄ zeroℝ -> Positive (abs x)
 xNonZeroThenPosAbsx x xNonZero = zeroLtxThenPosx (abs x) (xNonZeroThenZeroLtAbsx x xNonZero)
 {-# COMPILE AGDA2HS xNonZeroThenPosAbsx #-}
 
+@0 x≄0⇒pos∣x∣ : ∀ {x : ℝ} -> x ≄ zeroℝ -> Positive (abs x)
+x≄0⇒pos∣x∣ {x} = xNonZeroThenPosAbsx x
+
 absxLtyThenNegyLtxLty : ∀ x y -> abs x < y -> (negate y < x) Tuple.× (x < y)
 absxLtyThenNegyLtxLty x y absxLty = (ltLe0Trans (negate y) (negate (abs x)) x (negMonoLt (abs x) y absxLty) (begin
     negate (abs x)          ≈⟨ -‿cong (≃-sym ∣-x∣≃∣x∣) ⟩
@@ -2319,6 +2365,9 @@ absxLtyThenNegyLtxLty x y absxLty = (ltLe0Trans (negate y) (negate (abs x)) x (n
   (le0LtTrans x (abs x) y x≤∣x∣ absxLty)
   where open ≤-Reasoning
 {-# COMPILE AGDA2HS absxLtyThenNegyLtxLty #-}
+
+@0 ∣x∣<y⇒-y<x<y : ∀ {x y : ℝ} -> abs x < y -> (negate y < x) Tuple.× (x < y)
+∣x∣<y⇒-y<x<y {x} {y} = absxLtyThenNegyLtxLty x y
 
 xLtzAndyLtzThenMaxxyLtz : ∀ (x y z : ℝ) -> x < z -> y < z -> x ⊔ y < z
 xLtzAndyLtzThenMaxxyLtz x y z xLtz yLtz = lemma281OnlyIf (z - (x ⊔ y)) (ℕ.pred k :&: lem)
@@ -2352,6 +2401,9 @@ xLtzAndyLtzThenMaxxyLtz x y z xLtz yLtz = lemma281OnlyIf (z - (x ⊔ y)) (ℕ.pr
           seq z (2 ℕ.* m) ℚ.- (seq x (2 ℕ.* m) ℚ.⊔ seq y (2 ℕ.* m))  ∎
 {-# COMPILE AGDA2HS xLtzAndyLtzThenMaxxyLtz #-}
 
+@0 x<z∧y<z⇒x⊔y<z : ∀ {x y z : ℝ} -> x < z -> y < z -> x ⊔ y < z
+x<z∧y<z⇒x⊔y<z {x} {y} {z} = xLtzAndyLtzThenMaxxyLtz x y z
+
 @0 p⋆<q⋆⇒p<q : ∀ p q -> p ⋆ < q ⋆ -> p ℚ.< q
 p⋆<q⋆⇒p<q p q (MkPos (n :&: p⋆<q⋆)) = 0<q-p⇒p<q p q (begin-strict
   (+ 0 / 1)           ≤⟨ ℚP.nonNegative⁻¹ _ ⟩
@@ -2362,6 +2414,9 @@ p⋆<q⋆⇒p<q p q (MkPos (n :&: p⋆<q⋆)) = 0<q-p⇒p<q p q (begin-strict
 pospThenPosToRealp : ∀ p -> @0 ℚ.Positive p -> Positive (toReal p)
 pospThenPosToRealp p posp = zeroLtxThenPosx (toReal p) (pLtqThenToRealpLtToRealq (+ 0 / 1) p (ℚP.positive⁻¹ posp))
 {-# COMPILE AGDA2HS pospThenPosToRealp #-}
+
+@0 posp⇒posp⋆ : ∀ {p : ℚᵘ} -> @0 ℚ.Positive p -> Positive (toReal p)
+posp⇒posp⋆ {p} = pospThenPosToRealp p
 
 @0 x<y∧x<z⇒x<y⊓z : ∀ x y z -> x < y -> x < z -> x < y ⊓ z
 x<y∧x<z⇒x<y⊓z x y z x<y x<z = lemma281OnlyIf ((y ⊓ z) - x) (ℕ.pred N :&: lem)
@@ -2401,7 +2456,6 @@ x<y∧x<z⇒x<y⊓z x y z x<y x<z = lemma281OnlyIf ((y ⊓ z) - x) (ℕ.pred N :
           seq (y ⊓ z) (2 ℕ.* m) ℚ.- seq x (2 ℕ.* m)  ∎
 
 -- Extra properties
-
 @0 x≄0⇒-x≄0 : ∀ x -> x ≄0 -> (- x) ≄0
 x≄0⇒-x≄0 x (Left x<0) = Right (posCong (zeroℝ - x) (negate x - zeroℝ) (≃-trans (+-comm zeroℝ (- x)) (+-congʳ (- x) 0≃-0)) x<0)
 x≄0⇒-x≄0 x (Right 0<x) = Left (posCong (x - zeroℝ) (zeroℝ - negate x) (≃-trans (≃-trans (+-comm x (- zeroℝ)) (+-congˡ x (≃-sym 0≃-0))) (+-congʳ zeroℝ (≃-sym (neg-involutive x)))) 0<x)
@@ -2440,9 +2494,12 @@ negyLtxLtyThenAbsxLty x y negyLtxLty = ltRespLEq y (x ⊔ negate x) (abs x) (≃
   y          ∎-}
 {-# COMPILE AGDA2HS negyLtxLtyThenAbsxLty #-}
 
+-y<x<y⇒∣x∣<y : ∀ {x y : ℝ} -> (negate y < x) Tuple.× (x < y) -> abs x < y
+-y<x<y⇒∣x∣<y {x} {y} = negyLtxLtyThenAbsxLty x y
+
 @0 regular-n≤m : (x : ℕ -> ℚᵘ) ->
-                   (∀ (m n : ℕ) -> {m≢0 : m ≢0} -> {n≢0 : n ≢0} -> m ℕ.≥ n -> ℚ.∣ x m ℚ.- x n ∣ ℚ.≤ (+ 1 / m) {m≢0} ℚ.+ (+ 1 / n) {n≢0}) ->
-                   ∀ (m n : ℕ) -> {m≢0 : m ≢0} -> {n≢0 : n ≢0} -> ℚ.∣ x m ℚ.- x n ∣ ℚ.≤ (+ 1 / m) {m≢0} ℚ.+ (+ 1 / n) {n≢0}
+                   (∀ (m n : ℕ) -> {@0 m≢0 : m ≢0} -> {@0 n≢0 : n ≢0} -> m ℕ.≥ n -> ℚ.∣ x m ℚ.- x n ∣ ℚ.≤ (+ 1 / m) {m≢0} ℚ.+ (+ 1 / n) {n≢0}) ->
+                   ∀ (m n : ℕ) -> {@0 m≢0 : m ≢0} -> {@0 n≢0 : n ≢0} -> ℚ.∣ x m ℚ.- x n ∣ ℚ.≤ (+ 1 / m) {m≢0} ℚ.+ (+ 1 / n) {n≢0}
 regular-n≤m x hyp (suc m-1) (suc n-1) = [ left , right ]′ (ℕP.≤-total m n)
   where
     open ℚP.≤-Reasoning
@@ -2511,7 +2568,7 @@ abstract
 -- Density of ℚ in ℝ and corollaries
 
 densityOfℚ : ∀ x y -> x < y -> Σ' ℚᵘ (λ (@0 α : ℚᵘ) -> (x < toReal α) Tuple.× (toReal α < y))
-densityOfℚ x y (MkPos (nM1 :&: y₂ₙ-x₂ₙ>n⁻¹)) = α :^: (zeroLtxMinusxThenxLty x (toReal α)
+densityOfℚ x y (MkPos (nM1 :&: y₂ₙ-x₂ₙ>n⁻¹)) = α :^: (zeroLtyMinusxThenxLty x (toReal α)
                                                    (ltLe0Trans zeroℝ ((toReal (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ))) - (toReal (+ 1 / (2 ℕ.* n)))) (toReal α - x) lemA (begin
              (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)       ≤⟨ +-monoʳ-≤ ((+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆) (neg-mono-≤ (lemma-2-14 x (2 ℕ.* n))) ⟩
              (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ∣ x - (x₂ₙ ⋆) ∣             ≈⟨ +-congˡ (- ∣ x - x₂ₙ ⋆ ∣) (⋆-cong (lemB y₂ₙ x₂ₙ)) ⟩
@@ -2521,7 +2578,7 @@ densityOfℚ x y (MkPos (nM1 :&: y₂ₙ-x₂ₙ>n⁻¹)) = α :^: (zeroLtxMinus
              α ⋆ + (- (x₂ₙ ⋆) - (x - x₂ₙ ⋆))                             ≈⟨ +-congʳ (α ⋆) (≃-trans (≃-sym (neg-distrib-+ (x₂ₙ ⋆) (x - x₂ₙ ⋆)))
                                                                                                    (-‿cong (helper x (x₂ₙ ⋆)))) ⟩
              (α ⋆) - x                                                    ∎))  Tuple.,
-  zeroLtxMinusxThenxLty (toReal α) y (ltLe0Trans zeroℝ (toReal (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) - (toReal (+ 1 / (2 ℕ.* n)))) (y - toReal α) lemA (begin
+  zeroLtyMinusxThenxLty (toReal α) y (ltLe0Trans zeroℝ (toReal (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) - (toReal (+ 1 / (2 ℕ.* n)))) (y - toReal α) lemA (begin
             (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ((+ 1 / (2 ℕ.* n)) ⋆)       ≤⟨ +-monoʳ-≤ ((+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆) (neg-mono-≤ (lemma-2-14 y (2 ℕ.* n))) ⟩
             (+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆ - ∣ y - y₂ₙ ⋆ ∣               ≤⟨ +-monoʳ-≤ ((+ 1 / 2 ℚ.* (y₂ₙ ℚ.- x₂ₙ)) ⋆)
                                                                            (neg-mono-≤ (≤-respʳ-≃ (∣x-y∣≃∣y-x∣ (y₂ₙ ⋆) y) x≤∣x∣)) ⟩
@@ -2612,17 +2669,17 @@ corollary-2-15 x r posr = α :&: <-respˡ-≃ (∣x-y∣≃∣y-x∣ (α ⋆) x)
 
     αp : Σ' ℚᵘ (λ (@0 α : ℚᵘ) -> ((- r + x) < toReal α) Tuple.× (toReal α < (r + x)))
     αp = fastDensityOfℚ (- r + x) (r + x) -r+x<r+x
-    α = proj₁ αp
+    α = proj₁' αp
 
     -r<α-x : - r < α ⋆ - x
     -r<α-x = begin-strict
       - r           ≈⟨ solve 2 (λ r x -> (⊝ r) ⊜ (⊝ r ⊕ x ⊖ x)) ≃-refl r x ⟩
-      - r + x - x   <⟨ +-monoˡ-< (- x) (Tuple.fst (proj₂ αp)) ⟩
+      - r + x - x   <⟨ +-monoˡ-< (- x) (Tuple.fst (proj₂' αp)) ⟩
       α ⋆ - x        ∎
 
     α-x<r : α ⋆ - x < r
     α-x<r = begin-strict
-      α ⋆ - x     <⟨ +-monoˡ-< (- x) (Tuple.snd (proj₂ αp)) ⟩
+      α ⋆ - x     <⟨ +-monoˡ-< (- x) (Tuple.snd (proj₂' αp)) ⟩
       r + x - x   ≈⟨ solve 2 (λ r x -> (r ⊕ x ⊖ x) ⊜ r) ≃-refl r x ⟩
       r            ∎
 
@@ -2698,12 +2755,12 @@ x+y>0⇒x>0∨y>0 x y x+y>0 = [ (λ hyp -> Left (lem x X (proj₂ X-generator) (
         ; Κ     to κ
         )
     α-generator = fastDensityOfℚ zeroℝ (x + y) x+y>0
-    α = proj₁ α-generator
+    α = proj₁' α-generator
 
     pos4⁻¹α : Positive (((+ 1 / 4) ℚ.* α) ⋆)
     pos4⁻¹α = pospThenPosToRealp ((+ 1 / 4) ℚ.* α) (ℚ.positive (begin-strict
       (+ 0 / 1)               ≈⟨ ℚP.≃-sym (ℚP.*-zeroʳ (+ 1 / 4)) ⟩
-      (+ 1 / 4) ℚ.* (+ 0 / 1) <⟨ ℚP.*-monoʳ-<-pos {+ 1 / 4} _ (p⋆<q⋆⇒p<q (+ 0 / 1) α (Tuple.fst (proj₂ α-generator))) ⟩
+      (+ 1 / 4) ℚ.* (+ 0 / 1) <⟨ ℚP.*-monoʳ-<-pos {+ 1 / 4} _ (p⋆<q⋆⇒p<q (+ 0 / 1) α (Tuple.fst (proj₂' α-generator))) ⟩
       (+ 1 / 4) ℚ.* α    ∎))
       where open ℚP.≤-Reasoning
 
@@ -2728,7 +2785,7 @@ x+y>0⇒x>0∨y>0 x y x+y>0 = [ (λ hyp -> Left (lem x X (proj₂ X-generator) (
                                                          (⋆-distrib-to-p⋆-q⋆ (α ℚ.- (+ 1 / 4) ℚ.* α) ((+ 1 / 4) ℚ.* α))
                                                          (+-congˡ (- ((+ 1 / 4 ℚ.* α) ⋆)) (⋆-distrib-to-p⋆-q⋆ α ((+ 1 / 4) ℚ.* α))) ⟩
       α ⋆ - ((+ 1 / 4) ℚ.* α) ⋆ - ((+ 1 / 4) ℚ.* α) ⋆ <⟨ +-mono-<
-                                                         (+-mono-< (Tuple.snd (proj₂ α-generator)) (negMonoLt _ _ (proj₂ X-generator)))
+                                                         (+-mono-< (Tuple.snd (proj₂' α-generator)) (negMonoLt _ _ (proj₂ X-generator)))
                                                          (negMonoLt _ _ (proj₂ Y-generator)) ⟩
       (x + y) - ∣ x - X ⋆ ∣ - ∣ y - Y ⋆ ∣              ≤⟨ +-mono-≤ (+-monoʳ-≤ (x + y) (neg-mono-≤ x≤∣x∣)) (neg-mono-≤ x≤∣x∣) ⟩
       (x + y) - (x - X ⋆) - (y - Y ⋆)                 ≈⟨ +-cong (+-congʳ (x + y) (neg-distrib-+ x (- (X ⋆)))) (neg-distrib-+ y (- (Y ⋆))) ⟩
@@ -2759,8 +2816,8 @@ proposition-2-16 xs (suc (suc n-2)) sumxs>0 = either
 
 @0 corollary-2-17 : ∀ x y z -> y < z -> Either (x < z) (x > y)
 corollary-2-17 x y z y<z = either
-                             (λ z-x>0 -> Left (zeroLtxMinusxThenxLty x z z-x>0))
-                             (λ x-y>0 -> Right (zeroLtxMinusxThenxLty y x x-y>0))
+                             (λ z-x>0 -> Left (zeroLtyMinusxThenxLty x z z-x>0))
+                             (λ x-y>0 -> Right (zeroLtyMinusxThenxLty y x x-y>0))
                              (x+y>0⇒x>0∨y>0 (z - x) (x - y) (<-respʳ-≃ lem (xLtyThenZeroLtyMinusx y z y<z)))
   where
     open ℝ-Solver

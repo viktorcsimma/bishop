@@ -12,7 +12,27 @@ prelude:
   #  - _+_
   #  - Num
 
-#Then the rules themselves.
+# The preferred naming convention. Used when rewriting illegal characters in identifiers.
+name-style: camel
+# Whether we should rewrite kebab-case identifiers to the preferred convention.
+rewrite-kebab: true
+
+# Rules for replacing non-allowed characters in identifiers.
+# Not yet implemented.
+chars:
+  - from: <
+    to: lt
+  - from: >
+    to: gt
+  - from: +
+    to: plus
+  - from: -
+    to: minus
+  - from: *
+    to: multi
+  # etc.
+
+# Then rules for replacing an entire identifier with another one from a given module.
 rules:
 
   # The rational type.
@@ -117,6 +137,12 @@ rules:
   - from: ExtraProperties.fastArchimedeanℚ₂
     to: archimedeanℚ₂'
     importing: ExtraProperties
+  - from: Real.sum
+    to: sum'
+    importing: Real
+  - from: Real.max
+    to: max'
+    importing: Real
   - from: RealProperties.fastEqualityLemmaIf
     to: equalityLemmaIf'
     importing: RealProperties
@@ -126,3 +152,22 @@ rules:
   - from: RealProperties.zeroLtpThenZeroLtToRealp
     to: zeroLtpThenZeroLtToRealp'
     importing: RealProperties
+
+  # This way, it doesn't recognise these; unfortunately, we have to include them in rules.
+  # For tuples.
+  - from: Haskell.Prim.Tuple.fst
+    to: fst
+    importing: Prelude
+  - from: Haskell.Prim.Tuple.snd
+    to: snd
+    importing: Prelude
+  # For Either similarly.
+  - from: Haskell.Prim.Either.Either
+    to: Either
+    importing: Prelude
+  - from: Haskell.Prim.Either.Either.Left
+    to: Left
+    importing: Prelude
+  - from: Haskell.Prim.Either.Either.Right
+    to: Right
+    importing: Prelude

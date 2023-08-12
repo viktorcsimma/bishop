@@ -495,7 +495,7 @@ _≄_ : @0 ℝ → @0 ℝ → Set
 x ≄ y = Either (x < y) (y < x)
 {-# COMPILE AGDA2HS _≄_ #-}
 
-_≄0 : @0 ℝ -> Set
+@0 _≄0 : @0 ℝ -> Set
 x ≄0 = x ≄ zeroℝ
 
 _<_<_ : (@0 x y z : ℝ) -> Set
