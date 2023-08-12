@@ -1,0 +1,43 @@
+The problem is with sum0' (1/n!). I tried to calculate `seq e 10`.
+If we follow the path and set a breakpoint at `Sequence.cauchyToConvergent.xs`,
+we can see that `(a 9) = 9481`. So that's not "that" large.
+Still, `seq (f 9481) 0` breaks.
+Let's now set a breakpoint at `sum0'`. (We work with the optimalized version using `map`.)
+`a n` will simply be `1 // fact n`. This runs without problem; even for large numbers.
+Delete that breakpoint.
+Now let `a` be `(\ n -> Real.toReal (toInteger 1 Base.// Sequence.fact n))`. Try to run `seq (Real.sum0' a n) 0 for different n's.
+`n = 500` is the first one where you have to wait for ca. half a second.
+`n = 1000`: 2 seconds.
+`n = 1500`: 6.5 seconds.
+`n = 2000`: 13.5 seconds.
+`n = 2500`: 24 seconds.
+`n = 5000`: doesn't finish anymore.
+But actually, it doesn't even work with rationals. Try this:
+`sum $ map (\n -> 1 % Sequence.fact n) $ [0..4999]`
+This hangs too. So the problem isn't with real summation.
+
+Then I tried to do stuff with rationals.
+Actually, if you take only the denominators and sum them, it does terminate; even with 5000. Wow. (This is actually 0!+...+4999!.)
+Maybe the problem is with prime factorisation.
+
+fastSimplify was an idea to only divide by small primes. But it was even worse than (%) in time.
+
+So with simple unnormalised rationals (not counting the time required to print the result):
+`n = 500`: 0.5 seconds.
+`n = 1000`: 2 seconds.
+`n = 1500`: 9 seconds (ouch).
+`n = 2000`: 21 seconds (ouch).
+But what if it's only because of the garbage collector?
+No, it's not that. 84.3 percent of the time is still consumed by (+). show is 9.1%, fact is 1.8%, GC is 0.3%.
+So (+) is a bit quicker, but it's still basically useless. Let's not use unnormalised rationals anymore.
+It's probably with integer multiplication.
+
+Ratio Int? It overflows at series 15 already.
+And Int64? Same... it's Int64 by default.
+
+The `exact-real` library solves the problem by storing reals as Natural -> Integer sequences, specifying that the denominator is always 2^n. So only the numerators are stored. And this way, addition simply means adding the Integers to each other; multiplication goes similarly.
+And the precision is `much` better; the pth element is at most 2^(-p) from the real value.
+
+There seem to be two viable approaches:
+  - Taking the integer sequences, proving that they satisfy Bishop's criteria, creating an interface for them (probably we must redefine the operators equiavelently to that of the old ones and show that these are really equivalent), and then leaving everything else as it is. This way, we lose the precision, but the proofs will mostly work in the old way.
+  - Building this from scratch... and cheating our way through. Postulating most of the things we cannot simply prove. (Actually, not postulating them would require an entirely new mathematical theory; for which we probably wouldn't have time.) But we still have to rethink some of the constructive proofs that use the internal representation (maybe the most notable is cauchyToConvergent), so that they preserve the precision.

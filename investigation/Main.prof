@@ -1,0 +1,294 @@
+	Sat Aug 12 13:31 2023 Time and Allocation Profiling Report  (Final)
+
+	   Main +RTS -pa -RTS
+
+	total time  =       23.12 secs   (23116 ticks @ 1000 us, 1 processor)
+	total alloc = 6,715,647,136 bytes  (excludes profiling overheads)
+
+COST CENTRE MODULE                          SRC                       %time %alloc  ticks     bytes
+
++           Main                            Main.hs:96:3-50            84.3   62.0  19494 4165300536
+show        Main                            Main.hs:35:3-44             9.1   13.8   2103 927201728
+SYSTEM      SYSTEM                          <built-in>                  3.4    0.0    797    362256
+fact        Main                            Main.hs:(104,1)-(107,59)    1.8   24.1    407 1616918048
+main        Main                            Main.hs:118:1-36            1.0    0.1    241   4865616
+GC          GC                              <built-in>                  0.3    0.0     73         0
+series      Main                            Main.hs:(114,1)-(115,58)    0.0    0.0      1    448264
+IDLE        IDLE                            <built-in>                  0.0    0.0      0         0
+PINNED      SYSTEM                          <built-in>                  0.0    0.0      0         0
+DONT_CARE   MAIN                            <built-in>                  0.0    0.0      0         0
+OVERHEAD_of PROFILING                       <built-in>                  0.0    0.0      0    511800
+MAIN        MAIN                            <built-in>                  0.0    0.0      0       656
+CAF         GHC.Types                       <entire-module>             0.0    0.0      0         0
+CAF         GHC.Tuple                       <entire-module>             0.0    0.0      0         0
+CAF         GHC.Prim.Exception              <entire-module>             0.0    0.0      0         0
+CAF         GHC.Prim.Panic                  <entire-module>             0.0    0.0      0         0
+CAF         GHC.Classes                     <entire-module>             0.0    0.0      0         0
+CAF         GHC.CString                     <entire-module>             0.0    0.0      0         0
+CAF         GHC.Num.WordArray               <entire-module>             0.0    0.0      0         0
+CAF         GHC.Num.Primitives              <entire-module>             0.0    0.0      0         0
+CAF         GHC.Num.Backend.GMP             <entire-module>             0.0    0.0      0         0
+CAF         GHC.Num.Integer                 <entire-module>             0.0    0.0      0         0
+CAF         GHC.Num.Natural                 <entire-module>             0.0    0.0      0         0
+CAF         GHC.Num.BigNat                  <entire-module>             0.0    0.0      0        32
+CAF         GHC.Event.Array                 <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.Arr                   <entire-module>             0.0    0.0      0         0
+CAF         System.Posix.Types              <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.Poll                  <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.Manager               <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.EPoll                 <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.Control               <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.Unique                <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.PSQ                   <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.IntVar                <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.IntTable              <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.Internal.Types        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.Internal              <entire-module>             0.0    0.0      0         0
+CAF         Text.Read                       <entire-module>             0.0    0.0      0         0
+CAF         GHC.Storable                    <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Unsafe                   <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.IOMode                   <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Handle.Text              <entire-module>             0.0    0.0      0        64
+CAF         GHC.IO.FD                       <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Device                   <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.BufferedIO               <entire-module>             0.0    0.0      0         0
+CAF         GHC.Float.RealFracMethods       <entire-module>             0.0    0.0      0         0
+CAF         GHC.Float.ConversionUtils       <entire-module>             0.0    0.0      0         0
+CAF         GHC.Float                       <entire-module>             0.0    0.0      0         0
+CAF         GHC.Fingerprint.Type            <entire-module>             0.0    0.0      0         0
+CAF         GHC.Fingerprint                 <entire-module>             0.0    0.0      0         0
+CAF         GHC.Char                        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Bits                        <entire-module>             0.0    0.0      0         0
+CAF         Foreign.Storable                <entire-module>             0.0    0.0      0         0
+CAF         Foreign.Marshal.Array           <entire-module>             0.0    0.0      0         0
+CAF         Foreign.Marshal.Alloc           <entire-module>             0.0    0.0      0         0
+CAF         Foreign.C.Types                 <entire-module>             0.0    0.0      0         0
+CAF         Foreign.C.String                <entire-module>             0.0    0.0      0         0
+CAF         Foreign.C.Error                 <entire-module>             0.0    0.0      0         0
+CAF         Data.Version                    <entire-module>             0.0    0.0      0         0
+CAF         Data.Type.Ord                   <entire-module>             0.0    0.0      0         0
+CAF         Data.Type.Equality              <entire-module>             0.0    0.0      0         0
+CAF         Data.Tuple                      <entire-module>             0.0    0.0      0         0
+CAF         Data.Proxy                      <entire-module>             0.0    0.0      0         0
+CAF         Data.Dynamic                    <entire-module>             0.0    0.0      0         0
+CAF         Control.Monad.Fail              <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.TimerManager          <entire-module>             0.0    0.0      0         0
+CAF         GHC.Event.Thread                <entire-module>             0.0    0.0      0         0
+CAF         Data.Typeable.Internal          <entire-module>             0.0    0.0      0         0
+CAF         Data.Semigroup.Internal         <entire-module>             0.0    0.0      0         0
+CAF         Data.OldList                    <entire-module>             0.0    0.0      0         0
+CAF         Data.Functor.Utils              <entire-module>             0.0    0.0      0         0
+CAF         GHC.IOPort                      <entire-module>             0.0    0.0      0         0
+CAF         Text.Read.Lex                   <entire-module>             0.0    0.0      0         0
+CAF         Text.ParserCombinators.ReadPrec <entire-module>             0.0    0.0      0         0
+CAF         Text.ParserCombinators.ReadP    <entire-module>             0.0    0.0      0         0
+CAF         System.Posix.Internals          <entire-module>             0.0    0.0      0         0
+CAF         System.IO                       <entire-module>             0.0    0.0      0         0
+CAF         Numeric                         <entire-module>             0.0    0.0      0         0
+CAF         GHC.Word                        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Weak                        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Unicode                     <entire-module>             0.0    0.0      0         0
+CAF         GHC.TypeNats                    <entire-module>             0.0    0.0      0         0
+CAF         GHC.TypeLits                    <entire-module>             0.0    0.0      0         0
+CAF         GHC.TopHandler                  <entire-module>             0.0    0.0      0         0
+CAF         GHC.Stack.Types                 <entire-module>             0.0    0.0      0         0
+CAF         GHC.Stack.CCS                   <entire-module>             0.0    0.0      0         0
+CAF         GHC.Stable                      <entire-module>             0.0    0.0      0         0
+CAF         GHC.Show                        <entire-module>             0.0    0.0      0        48
+CAF         GHC.STRef                       <entire-module>             0.0    0.0      0         0
+CAF         GHC.ST                          <entire-module>             0.0    0.0      0         0
+CAF         GHC.Real                        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Read                        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Ptr                         <entire-module>             0.0    0.0      0         0
+CAF         GHC.Pack                        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Num                         <entire-module>             0.0    0.0      0         0
+CAF         GHC.MVar                        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Maybe                       <entire-module>             0.0    0.0      0         0
+CAF         GHC.List                        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Ix                          <entire-module>             0.0    0.0      0         0
+CAF         GHC.Int                         <entire-module>             0.0    0.0      0         0
+CAF         GHC.IORef                       <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.StdHandles               <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Handle.Types             <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Handle.Internals         <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Handle.FD                <entire-module>             0.0    0.0      0     34768
+CAF         GHC.IO.Handle                   <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Exception                <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Encoding.UTF8            <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Encoding.UTF32           <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Encoding.UTF16           <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Encoding.Types           <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Encoding.Latin1          <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Encoding.Iconv           <entire-module>             0.0    0.0      0       200
+CAF         GHC.IO.Encoding.Failure         <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO.Encoding                 <entire-module>             0.0    0.0      0      2448
+CAF         GHC.IO.Buffer                   <entire-module>             0.0    0.0      0         0
+CAF         GHC.IO                          <entire-module>             0.0    0.0      0         0
+CAF         GHC.Generics                    <entire-module>             0.0    0.0      0         0
+CAF         GHC.ForeignPtr                  <entire-module>             0.0    0.0      0         0
+CAF         GHC.Foreign                     <entire-module>             0.0    0.0      0         0
+CAF         GHC.Exception.Type              <entire-module>             0.0    0.0      0         0
+CAF         GHC.Exception                   <entire-module>             0.0    0.0      0         0
+CAF         GHC.Err                         <entire-module>             0.0    0.0      0         0
+CAF         GHC.Enum                        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Conc.Sync                   <entire-module>             0.0    0.0      0         0
+CAF         GHC.Conc.Signal                 <entire-module>             0.0    0.0      0       640
+CAF         GHC.Conc.IO                     <entire-module>             0.0    0.0      0         0
+CAF         GHC.Base                        <entire-module>             0.0    0.0      0         0
+CAF         GHC.Arr                         <entire-module>             0.0    0.0      0         0
+CAF         Data.Monoid                     <entire-module>             0.0    0.0      0         0
+CAF         Data.Foldable                   <entire-module>             0.0    0.0      0         0
+CAF         Data.Either                     <entire-module>             0.0    0.0      0         0
+CAF         Control.Exception.Base          <entire-module>             0.0    0.0      0         0
+CAF         Main                            <entire-module>             0.0    0.0      0        32
+signum      Main                            Main.hs:99:3-57             0.0    0.0      0         0
+numerator   Main                            Main.hs:30:25-33            0.0    0.0      0         0
+negate      Main                            Main.hs:101:3-37            0.0    0.0      0         0
+fromInteger Main                            Main.hs:100:3-30            0.0    0.0      0         0
+factSeq     Main                            Main.hs:110:1-23            0.0    0.0      0         0
+denominator Main                            Main.hs:31:25-35            0.0    0.0      0         0
+abs         Main                            Main.hs:98:3-38             0.0    0.0      0         0
+==          Main                            Main.hs:38:3-40             0.0    0.0      0         0
+*           Main                            Main.hs:97:3-42             0.0    0.0      0         0
+
+
+                                                                                            individual      inherited
+COST CENTRE     MODULE                          SRC                      no.     entries  %time %alloc   %time %alloc  ticks     bytes
+
+MAIN            MAIN                            <built-in>               129           0    0.0    0.0   100.0  100.0      0       656
+ CAF            Main                            <entire-module>          257           0    0.0    0.0    95.2   99.9      0        32
+  main          Main                            Main.hs:118:1-36         258           1    0.0    0.0    95.2   99.9      0        80
+   series       Main                            Main.hs:(114,1)-(115,58) 261           1    0.0    0.0    86.1   86.1      1    448264
+    +           Main                            Main.hs:96:3-50          263        2000   84.3   62.0    84.3   62.0  19494 4165300536
+    factSeq     Main                            Main.hs:110:1-23         264        2000    0.0    0.0     1.8   24.1      0         0
+     fact       Main                            Main.hs:(104,1)-(107,59) 265        2000    1.8   24.1     1.8   24.1    407 1616918048
+    fromInteger Main                            Main.hs:100:3-30         262           1    0.0    0.0     0.0    0.0      0         0
+   show         Main                            Main.hs:35:3-44          260           1    9.1   13.8     9.1   13.8   2103 927201728
+ CAF            Control.Exception.Base          <entire-module>          256           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Either                     <entire-module>          255           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Foldable                   <entire-module>          254           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Monoid                     <entire-module>          253           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Arr                         <entire-module>          252           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Base                        <entire-module>          251           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Conc.IO                     <entire-module>          250           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Conc.Signal                 <entire-module>          249           0    0.0    0.0     0.0    0.0      0       640
+ CAF            GHC.Conc.Sync                   <entire-module>          248           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Enum                        <entire-module>          247           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Err                         <entire-module>          246           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Exception                   <entire-module>          245           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Exception.Type              <entire-module>          244           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Foreign                     <entire-module>          243           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.ForeignPtr                  <entire-module>          242           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Generics                    <entire-module>          241           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO                          <entire-module>          240           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Buffer                   <entire-module>          239           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Encoding                 <entire-module>          238           0    0.0    0.0     0.0    0.0      0      2448
+ CAF            GHC.IO.Encoding.Failure         <entire-module>          237           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Encoding.Iconv           <entire-module>          236           0    0.0    0.0     0.0    0.0      0       200
+ CAF            GHC.IO.Encoding.Latin1          <entire-module>          235           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Encoding.Types           <entire-module>          234           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Encoding.UTF16           <entire-module>          233           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Encoding.UTF32           <entire-module>          232           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Encoding.UTF8            <entire-module>          231           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Exception                <entire-module>          230           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Handle                   <entire-module>          229           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Handle.FD                <entire-module>          228           0    0.0    0.0     0.0    0.0      0     34768
+ CAF            GHC.IO.Handle.Internals         <entire-module>          227           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Handle.Types             <entire-module>          226           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.StdHandles               <entire-module>          225           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IORef                       <entire-module>          224           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Int                         <entire-module>          223           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Ix                          <entire-module>          222           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.List                        <entire-module>          221           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Maybe                       <entire-module>          220           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.MVar                        <entire-module>          219           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Num                         <entire-module>          218           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Pack                        <entire-module>          217           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Ptr                         <entire-module>          216           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Read                        <entire-module>          215           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Real                        <entire-module>          214           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.ST                          <entire-module>          213           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.STRef                       <entire-module>          212           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Show                        <entire-module>          211           0    0.0    0.0     0.0    0.0      0        48
+ CAF            GHC.Stable                      <entire-module>          210           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Stack.CCS                   <entire-module>          209           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Stack.Types                 <entire-module>          208           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.TopHandler                  <entire-module>          207           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.TypeLits                    <entire-module>          206           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.TypeNats                    <entire-module>          205           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Unicode                     <entire-module>          204           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Weak                        <entire-module>          203           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Word                        <entire-module>          202           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Numeric                         <entire-module>          201           0    0.0    0.0     0.0    0.0      0         0
+ CAF            System.IO                       <entire-module>          200           0    0.0    0.0     0.0    0.0      0         0
+ CAF            System.Posix.Internals          <entire-module>          199           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Text.ParserCombinators.ReadP    <entire-module>          198           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Text.ParserCombinators.ReadPrec <entire-module>          197           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Text.Read.Lex                   <entire-module>          196           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IOPort                      <entire-module>          195           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Functor.Utils              <entire-module>          194           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.OldList                    <entire-module>          193           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Semigroup.Internal         <entire-module>          192           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Typeable.Internal          <entire-module>          191           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.Thread                <entire-module>          190           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.TimerManager          <entire-module>          189           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Control.Monad.Fail              <entire-module>          188           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Dynamic                    <entire-module>          187           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Proxy                      <entire-module>          186           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Tuple                      <entire-module>          185           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Type.Equality              <entire-module>          184           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Type.Ord                   <entire-module>          183           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Data.Version                    <entire-module>          182           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Foreign.C.Error                 <entire-module>          181           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Foreign.C.String                <entire-module>          180           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Foreign.C.Types                 <entire-module>          179           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Foreign.Marshal.Alloc           <entire-module>          178           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Foreign.Marshal.Array           <entire-module>          177           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Foreign.Storable                <entire-module>          176           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Bits                        <entire-module>          175           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Char                        <entire-module>          174           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Fingerprint                 <entire-module>          173           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Fingerprint.Type            <entire-module>          172           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Float                       <entire-module>          171           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Float.ConversionUtils       <entire-module>          170           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Float.RealFracMethods       <entire-module>          169           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.BufferedIO               <entire-module>          168           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Device                   <entire-module>          167           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.FD                       <entire-module>          166           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Handle.Text              <entire-module>          165           0    0.0    0.0     0.0    0.0      0        64
+ CAF            GHC.IO.IOMode                   <entire-module>          164           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.IO.Unsafe                   <entire-module>          163           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Storable                    <entire-module>          162           0    0.0    0.0     0.0    0.0      0         0
+ CAF            Text.Read                       <entire-module>          161           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.Internal              <entire-module>          160           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.Internal.Types        <entire-module>          159           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.IntTable              <entire-module>          158           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.IntVar                <entire-module>          157           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.PSQ                   <entire-module>          156           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.Unique                <entire-module>          155           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.Control               <entire-module>          154           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.EPoll                 <entire-module>          153           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.Manager               <entire-module>          152           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.Poll                  <entire-module>          151           0    0.0    0.0     0.0    0.0      0         0
+ CAF            System.Posix.Types              <entire-module>          150           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.Arr                   <entire-module>          149           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Event.Array                 <entire-module>          148           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Num.BigNat                  <entire-module>          147           0    0.0    0.0     0.0    0.0      0        32
+ CAF            GHC.Num.Natural                 <entire-module>          146           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Num.Integer                 <entire-module>          145           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Num.Backend.GMP             <entire-module>          144           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Num.Primitives              <entire-module>          143           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Num.WordArray               <entire-module>          142           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.CString                     <entire-module>          141           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Classes                     <entire-module>          140           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Prim.Panic                  <entire-module>          139           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Prim.Exception              <entire-module>          138           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Tuple                       <entire-module>          137           0    0.0    0.0     0.0    0.0      0         0
+ CAF            GHC.Types                       <entire-module>          136           0    0.0    0.0     0.0    0.0      0         0
+ DONT_CARE      MAIN                            <built-in>               132           0    0.0    0.0     0.0    0.0      0         0
+ GC             GC                              <built-in>               134           0    0.3    0.0     0.3    0.0     73         0
+ IDLE           IDLE                            <built-in>               130           0    0.0    0.0     0.0    0.0      0         0
+ OVERHEAD_of    PROFILING                       <built-in>               133           0    0.0    0.0     0.0    0.0      0    511800
+ PINNED         SYSTEM                          <built-in>               131           0    0.0    0.0     0.0    0.0      0         0
+ SYSTEM         SYSTEM                          <built-in>               135           0    3.4    0.0     3.4    0.0    797    362256
+ main           Main                            Main.hs:118:1-36         259           0    1.0    0.1     1.0    0.1    241   4865536
