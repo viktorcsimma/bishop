@@ -35,9 +35,20 @@ It's probably with integer multiplication.
 Ratio Int? It overflows at series 15 already.
 And Int64? Same... it's Int64 by default.
 
-The `exact-real` library solves the problem by storing reals as Natural -> Integer sequences, specifying that the denominator is always 2^n. So only the numerators are stored. And this way, addition simply means adding the Integers to each other; multiplication goes similarly.
+The `exact-real` library solves the problem by storing reals as Natural -> Integer sequences, specifying that the denominator is always 2^n.
+So only the numerators are stored. And this way, addition simply means adding the Integers to each other; multiplication goes similarly.
 And the precision is `much` better; the pth element is at most 2^(-p) from the real value.
 
 There seem to be two viable approaches:
-  - Taking the integer sequences, proving that they satisfy Bishop's criteria, creating an interface for them (probably we must redefine the operators equiavelently to that of the old ones and show that these are really equivalent), and then leaving everything else as it is. This way, we lose the precision, but the proofs will mostly work in the old way.
-  - Building this from scratch... and cheating our way through. Postulating most of the things we cannot simply prove. (Actually, not postulating them would require an entirely new mathematical theory; for which we probably wouldn't have time.) But we still have to rethink some of the constructive proofs that use the internal representation (maybe the most notable is cauchyToConvergent), so that they preserve the precision.
+  - Taking the integer sequences, proving that they satisfy Bishop's criteria, creating an interface for them
+    (probably we must redefine the operators equivalently to that of the old ones and show that these really are equivalent),
+    and then leaving everything else as it is. This way, we lose the precision, but the proofs will mostly work in the old way.
+  - Building this from scratch... and cheating our way through. Postulating most of the things we cannot simply prove.
+    (Actually, not postulating them would require an entirely new mathematical theory; for which we probably wouldn't have time.)
+    But we still have to rethink some of the constructive proofs that use the internal representation (maybe the most notable is cauchyToConvergent), so that they preserve the precision.
+
+Actually, we can convert rationals to such sequences (though it's not that trivial then with Bishop reals).
+With every new member, a new bit is stored in the binary form.
+
+
+With Hermaszewska's CReal type, series 5000 runs in a reasonable time (ca. 7 seconds); series 10000 needs a minute.
